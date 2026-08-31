@@ -3,19 +3,31 @@
 @tailwind utilities;
 
 :root {
+<<<<<<< HEAD
   --primary: #1d4ed8;
+=======
+  --primary: #274494;
+>>>>>>> 833a45fadf50e643868084efb4a23165db1b06fb
   --foreground-rgb: 0, 0, 0;
   --background-start-rgb: 214, 219, 220;
   --background-end-rgb: 255, 255, 255;
 }
+<<<<<<< HEAD
 /*
+=======
+/* 
+>>>>>>> 833a45fadf50e643868084efb4a23165db1b06fb
 @media (prefers-color-scheme: dark) {
   :root {
     --foreground-rgb: 255, 255, 255;
     --background-start-rgb: 0, 0, 0;
     --background-end-rgb: 0, 0, 0;
   }
+<<<<<<< HEAD
 } */
+=======
+} */ 
+>>>>>>> 833a45fadf50e643868084efb4a23165db1b06fb
 
 /*  COMPONENTE DEL MEDIO  */
 .sticky-bottom-component {
@@ -46,6 +58,7 @@
 .icon {
   color: #25d366; /* Color verde de WhatsApp */
   font-size: 1.5rem;
+<<<<<<< HEAD
 }
 
 p {
@@ -59,12 +72,36 @@ body { color: #0f172a; background: #f8fafc; }
 a, button { -webkit-tap-highlight-color: transparent; }
 ::selection { background: #bfdbfe; color: #172554; }
 
+=======
+}
+
+p {
+  margin: 0;
+  font-size: 1rem;
+  color: #333;
+  font-weight: 500;
+}
+body {
+  color: rgb(var(--foreground-rgb));
+  background: linear-gradient(
+      to bottom,
+      transparent,
+      rgb(var(--background-start-rgb))
+      )
+      rgb(var(--background-end-rgb))
+}
+
+>>>>>>> 833a45fadf50e643868084efb4a23165db1b06fb
 
 
 @keyframes fadeIn {
   0% {opacity: 0;}
   100% {opacity: 1;}
+<<<<<<< HEAD
 }
+=======
+} 
+>>>>>>> 833a45fadf50e643868084efb4a23165db1b06fb
 
 @-webkit-keyframes fadeIn {
   0% {opacity: 0;}

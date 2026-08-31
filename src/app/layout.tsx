@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { inter } from "@/config/fonts";
 import "./globals.css";
+<<<<<<< HEAD
 import { siteConfig } from "@/config/site";
 
 export const metadata: Metadata = {
@@ -11,6 +12,12 @@ export const metadata: Metadata = {
   alternates: { canonical: "/" },
   openGraph: { type: "website", locale: "es_CL", siteName: siteConfig.name, title: "ViccsAuto | Autopartes y vehículos", description: siteConfig.description },
   robots: { index: true, follow: true },
+=======
+
+export const metadata: Metadata = {
+  title: "ViccsAuto",
+  description: "Tienda de Auto Partes",
+>>>>>>> 833a45fadf50e643868084efb4a23165db1b06fb
 };
 
 export default function RootLayout({

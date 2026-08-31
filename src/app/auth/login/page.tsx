@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import Link from "next/link";
 import { loginAction } from "@/app/actions/auth";
 
@@ -5,3 +6,14 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   const { error } = await searchParams;
   return <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-6"><p className="font-bold uppercase tracking-widest text-blue-700">Mi cuenta</p><h1 className="mt-2 text-4xl font-black">Iniciar sesión</h1><p className="mt-4 text-slate-600">Accede para consultar tus pedidos y direcciones.</p>{error && <p role="alert" className="mt-5 rounded-2xl bg-red-50 p-4 text-sm text-red-700">Correo o contraseña incorrectos.</p>}<form action={loginAction} className="mt-7 space-y-4"><label className="block text-sm font-bold">Correo<input required type="email" name="email" autoComplete="email" className="mt-2 w-full rounded-2xl border p-3 font-normal" /></label><label className="block text-sm font-bold">Contraseña<input required minLength={8} type="password" name="password" autoComplete="current-password" className="mt-2 w-full rounded-2xl border p-3 font-normal" /></label><button className="w-full rounded-full bg-blue-700 px-6 py-3 font-bold text-white">Iniciar sesión</button></form><div className="mt-5 flex justify-between text-sm"><Link href="/auth/new-account" className="font-bold text-blue-700">Crear cuenta</Link><Link href="/auth/forgot-password" className="text-slate-600">Olvidé mi contraseña</Link></div></main>;
 }
+=======
+import { titleFont } from "@/config/fonts";
+import Image from "next/image";
+
+export default function Home() {
+  return (
+    <main>
+      <h1>Login Page</h1>
+    </main>
+)}
+>>>>>>> 833a45fadf50e643868084efb4a23165db1b06fb
