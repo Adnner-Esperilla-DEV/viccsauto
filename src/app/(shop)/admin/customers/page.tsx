@@ -1,0 +1,4 @@
+import { db } from "@/lib/db";
+import { requireStaff } from "@/lib/auth";
+export const dynamic = "force-dynamic";
+export default async function CustomersAdminPage() { await requireStaff(); const customers = await db.user.findMany({ where: { role: "CUSTOMER" }, include: { _count: { select: { orders: true } } }, orderBy: { createdAt: "desc" } }); return <main className="mx-auto max-w-7xl px-6 py-10"><h1 className="text-4xl font-black">Clientes</h1><div className="mt-8 overflow-x-auto rounded-3xl bg-white p-6"><table className="w-full text-left"><thead><tr><th className="p-3">Cliente</th><th>Correo</th><th>Teléfono</th><th>Pedidos</th><th>Estado</th></tr></thead><tbody>{customers.map((row) => <tr key={row.id} className="border-t"><td className="p-3"><b>{row.firstName} {row.lastName}</b></td><td>{row.email}</td><td>{row.phone ?? "—"}</td><td>{row._count.orders}</td><td>{row.status}</td></tr>)}</tbody></table></div></main>; }

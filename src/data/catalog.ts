@@ -1,0 +1,74 @@
+import type {
+  AutomotiveProduct,
+  CategorySummary,
+  VehicleListing,
+} from "@/interfaces";
+
+export const categories: CategorySummary[] = [
+  { slug: "frenos", name: "Frenos", description: "Pastillas, discos y componentes para una frenada segura.", icon: "brake" },
+  { slug: "motor", name: "Motor", description: "Filtros, correas y piezas para mantener el rendimiento.", icon: "engine" },
+  { slug: "iluminacion", name: "Iluminación", description: "Faros, focos LED y señalización automotriz.", icon: "light" },
+  { slug: "electricidad", name: "Electricidad", description: "Baterías, sensores y componentes eléctricos.", icon: "battery" },
+  { slug: "carroceria", name: "Carrocería", description: "Espejos, parachoques y piezas exteriores.", icon: "body" },
+];
+
+export const products: AutomotiveProduct[] = [
+  {
+    id: "part-001", slug: "pastillas-freno-delanteras-toyota-yaris", sku: "VIC-FR-001",
+    name: "Pastillas de freno delanteras Toyota Yaris", shortDescription: "Compuesto cerámico de baja emisión de polvo.",
+    description: "Juego de pastillas delanteras con frenado progresivo, bajo ruido y ajuste equivalente a equipo original.",
+    category: "Frenos", categorySlug: "frenos", brand: "Bosch", price: 42990, compareAtPrice: 48990,
+    stock: 18, condition: "new", oemCodes: ["04465-0D150", "04465-52190"], icon: "brake", featured: true,
+    compatibility: [{ make: "Toyota", model: "Yaris", years: "2014–2023", engine: "1.3 / 1.5" }],
+  },
+  {
+    id: "part-002", slug: "kit-filtros-nissan-np300", sku: "VIC-MO-014",
+    name: "Kit de filtros Nissan NP300", shortDescription: "Filtro de aceite, aire y combustible.",
+    description: "Kit de mantenimiento periódico para motores diésel Nissan NP300. Incluye tres filtros sellados.",
+    category: "Motor", categorySlug: "motor", brand: "Mann-Filter", price: 68990,
+    stock: 9, condition: "new", oemCodes: ["A5208-4KH0A"], icon: "engine", featured: true,
+    compatibility: [{ make: "Nissan", model: "NP300 Navara", years: "2016–2024", engine: "2.3 dCi" }],
+  },
+  {
+    id: "part-003", slug: "foco-led-h4-alta-potencia", sku: "VIC-IL-008",
+    name: "Kit focos LED H4 6500K", shortDescription: "Iluminación blanca con disipación activa.",
+    description: "Par de focos LED H4 para sistemas de 12 V, con haz definido y cuerpo de aluminio.",
+    category: "Iluminación", categorySlug: "iluminacion", brand: "Osram", price: 35990,
+    stock: 27, condition: "new", oemCodes: ["H4-LED-12V"], icon: "light", featured: true,
+    compatibility: [{ make: "Universal", model: "Con base H4", years: "12 V" }],
+  },
+  {
+    id: "part-004", slug: "bateria-60ah-libre-mantencion", sku: "VIC-EL-021",
+    name: "Batería 60 Ah libre de mantención", shortDescription: "Arranque confiable para vehículos livianos.",
+    description: "Batería sellada de 12 V y 60 Ah con indicador de carga y garantía local.",
+    category: "Electricidad", categorySlug: "electricidad", brand: "Bosch", price: 99990,
+    stock: 6, condition: "new", oemCodes: ["DIN60"], icon: "battery",
+    compatibility: [{ make: "Universal", model: "Bandeja DIN60", years: "12 V" }],
+  },
+  {
+    id: "part-005", slug: "espejo-lateral-chevrolet-sail-derecho", sku: "VIC-CA-011",
+    name: "Espejo lateral derecho Chevrolet Sail", shortDescription: "Regulación eléctrica y carcasa imprimada.",
+    description: "Espejo retrovisor derecho listo para pintar, con conector eléctrico compatible.",
+    category: "Carrocería", categorySlug: "carroceria", brand: "TYC", price: 74990,
+    stock: 3, condition: "new", oemCodes: ["9066006"], icon: "body",
+    compatibility: [{ make: "Chevrolet", model: "Sail", years: "2016–2022" }],
+  },
+  {
+    id: "part-006", slug: "alternador-hyundai-accent-90a", sku: "VIC-EL-034",
+    name: "Alternador Hyundai Accent 90 A", shortDescription: "Unidad remanufacturada y probada en banco.",
+    description: "Alternador de 90 amperios con rodamientos y regulador renovados. Incluye informe de prueba.",
+    category: "Electricidad", categorySlug: "electricidad", brand: "Viccs Reman", price: 159990,
+    stock: 2, condition: "remanufactured", oemCodes: ["37300-2B101"], icon: "battery",
+    compatibility: [{ make: "Hyundai", model: "Accent", years: "2012–2018", engine: "1.4 / 1.6" }],
+  },
+];
+
+export const vehicles: VehicleListing[] = [
+  { id: "vehicle-001", slug: "toyota-rav4-2021-limited", make: "Toyota", model: "RAV4 Limited", year: 2021, price: 21990000, mileage: 48500, transmission: "Automática", fuel: "Gasolina", condition: "Seminuevo", location: "Arica", featured: true, description: "SUV con historial de mantenimiento, cámara 360°, control crucero adaptativo y documentación al día." },
+  { id: "vehicle-002", slug: "nissan-np300-2020-se", make: "Nissan", model: "NP300 SE 4x4", year: 2020, price: 18490000, mileage: 76200, transmission: "Mecánica", fuel: "Diésel", condition: "Usado", location: "Arica", featured: true, description: "Camioneta doble cabina 4x4, motor 2.3 dCi y revisión técnica vigente." },
+  { id: "vehicle-003", slug: "hyundai-accent-2022-plus", make: "Hyundai", model: "Accent Plus", year: 2022, price: 11490000, mileage: 32900, transmission: "Automática", fuel: "Gasolina", condition: "Seminuevo", location: "Arica", description: "Sedán eficiente con aire acondicionado, pantalla multimedia y dos llaves." },
+];
+
+export const getProduct = (slug: string) => products.find((item) => item.slug === slug);
+export const getVehicle = (slug: string) => vehicles.find((item) => item.slug === slug);
+export const getCategory = (slug: string) => categories.find((item) => item.slug === slug);

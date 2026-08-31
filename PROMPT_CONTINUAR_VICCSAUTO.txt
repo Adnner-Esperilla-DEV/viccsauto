@@ -1,0 +1,213 @@
+Quiero que continúes y culmines el proyecto ViccsAuto ubicado en:
+
+D:\Adnner\Viccsauto\viccsauto
+
+OBJETIVO GENERAL
+
+Completar ViccsAuto como un ecommerce administrable y listo para producción, especializado en venta de autopartes, repuestos y vehículos. Debe incluir catálogo, compatibilidad automotriz, inventario, clientes, carrito, checkout, pedidos, administración, SEO, seguridad, pruebas y una arquitectura preparada para conectar pagos, envíos, correo y despliegue.
+
+IMPORTANTE
+
+- Inspecciona primero el estado real del repositorio; no confíes únicamente en este resumen.
+- Continúa el trabajo existente. No reinicies el proyecto ni reemplaces lo que ya funciona.
+- Conserva los cambios del usuario y evita operaciones destructivas de Git.
+- No publiques secretos ni muestres el contenido de .env.
+- Usa apply_patch para editar archivos.
+- Mantén el proyecto compilable después de cada etapa.
+- No declares el proyecto terminado sin probar los flujos completos.
+- El mercado inicial asumido es Chile, moneda CLP y ubicación Arica. Centraliza estos valores para que puedan cambiarse posteriormente.
+- Los vehículos no deben tratarse como una autoparte normal: su flujo principal puede ser cotización, reserva o agendamiento.
+
+ESTADO YA IMPLEMENTADO
+
+- Next.js 16.3.3 con App Router y React 19.2.8.
+- TypeScript, Tailwind CSS y ESLint con configuración moderna.
+- El build de producción terminó correctamente antes de añadir Prisma.
+- La auditoría de dependencias de producción quedó con cero vulnerabilidades antes de añadir Prisma. Repetir la auditoría.
+- Storefront responsive con página principal moderna.
+- Catálogo automotriz tipado.
+- Categorías: frenos, motor, iluminación, electricidad y carrocería.
+- Búsqueda por nombre, SKU y código OEM.
+- Fichas de autopartes con marca, stock, precio, códigos OEM y compatibilidad.
+- Catálogo y fichas separadas para vehículos.
+- Contacto y cotización mediante WhatsApp.
+- SEO base: metadata, canonical, sitemap, robots y JSON-LD Product, Offer y Car.
+- Configuración comercial centralizada en src/config/site.ts.
+- Datos iniciales en src/data/catalog.ts.
+- Interfaces automotrices en src/interfaces/automotive.ts.
+- Prisma 6.19.1 instalado junto con bcryptjs, jose y zod.
+- Base SQLite local creada correctamente en prisma/dev.db.
+- Prisma Client generado correctamente.
+- Semilla ejecutada correctamente: 6 productos, 3 vehículos y un administrador.
+- El archivo .env está ignorado por Git y no debe mostrarse.
+
+MODELO DE DATOS EXISTENTE
+
+El archivo prisma/schema.prisma incluye modelos para:
+
+- User y roles.
+- Address.
+- Category y Brand.
+- Product y ProductImage.
+- ProductCompatibility.
+- Vehicle.
+- InventoryLocation, InventoryItem e InventoryMovement.
+- Cart y CartItem.
+- Order y OrderItem.
+- Payment.
+- Shipment.
+- AuditLog.
+
+También existen:
+
+- prisma/seed.ts
+- src/lib/db.ts
+- scripts npm db:generate, db:push, db:seed y db:studio
+
+COMPROBACIÓN INICIAL OBLIGATORIA
+
+Antes de desarrollar, ejecutar y corregir lo necesario:
+
+1. npm run db:generate
+2. npm run typecheck
+3. npm run lint
+4. npm run build
+5. npm audit --omit=dev
+
+Nota: una ejecución anterior de "npm exec prisma format" desde C:\ mostró un error porque Prisma buscó el schema fuera del proyecto. Los comandos db:generate, db:push y db:seed sí funcionaron. Ejecuta Prisma desde la carpeta del proyecto o pasa --schema prisma/schema.prisma.
+
+TRABAJO PENDIENTE, EN ORDEN DE PRIORIDAD
+
+FASE 1: CONECTAR LA BASE DE DATOS
+
+- Crear una capa de repositorios/servicios que consulte Prisma.
+- Reemplazar gradualmente los datos estáticos de src/data/catalog.ts por consultas reales.
+- Mantener fallback o semilla solo si es necesario para build/SSG.
+- Mapear correctamente JSON almacenado en oemCodes y features.
+- Añadir manejo de errores y estados vacíos.
+- Evitar crear un PrismaClient nuevo por petición; reutilizar src/lib/db.ts.
+- Añadir transacciones para operaciones críticas.
+
+FASE 2: AUTENTICACIÓN Y SEGURIDAD
+
+- Implementar registro de clientes.
+- Implementar login seguro con bcryptjs.
+- Crear sesiones firmadas usando jose y cookies httpOnly, secure en producción, sameSite y expiración.
+- Añadir logout y recuperación/cambio de contraseña preparado para correo.
+- Validar formularios con Zod en servidor.
+- Proteger /admin por rol ADMIN o STAFF.
+- Proteger cuenta y pedidos por usuario.
+- Evitar enumeración de usuarios y mensajes que revelen datos sensibles.
+- Añadir rate limiting o una interfaz preparada para Redis en login, registro y checkout.
+- Registrar acciones administrativas importantes en AuditLog.
+- Nunca confiar únicamente en controles del cliente.
+
+FASE 3: CARRITO Y CHECKOUT
+
+- Implementar carrito persistente mediante Cart y CartItem.
+- Asociar carrito anónimo mediante cookie segura con token aleatorio.
+- Permitir agregar, eliminar y actualizar cantidades.
+- Validar stock y precio siempre en servidor.
+- Mostrar subtotal, envío, descuentos, impuestos y total.
+- Crear checkout con datos del cliente y dirección.
+- Crear pedido dentro de una transacción.
+- Reservar o descontar inventario de forma segura.
+- Evitar pedidos duplicados e implementar idempotencia.
+- Crear página de confirmación y detalle del pedido.
+- Mantener el flujo de vehículos como cotización/reserva, separado del carrito de repuestos.
+
+FASE 4: PANEL ADMINISTRATIVO
+
+- Crear layout y navegación administrativa.
+- Dashboard con ventas, pedidos, stock bajo, clientes y vehículos disponibles.
+- CRUD de categorías y marcas.
+- CRUD de autopartes, imágenes, precios, SKU, OEM y compatibilidades.
+- CRUD de vehículos y sus estados.
+- Gestión de bodegas e inventario.
+- Registrar entradas, salidas, ajustes y reservas en InventoryMovement.
+- Gestión de clientes.
+- Listado y detalle de pedidos.
+- Cambiar estados de pedido, pago y despacho con reglas válidas.
+- Registrar tracking de envíos.
+- Reportes básicos y exportación CSV.
+- Estados vacíos, loading, errores y confirmaciones accesibles.
+
+FASE 5: PAGOS, ENVÍOS Y CORREO
+
+- Diseñar interfaces PaymentProvider, ShippingProvider y MailProvider.
+- Implementar inicialmente un proveedor manual/sandbox para poder probar todo el flujo.
+- Dejar adaptadores preparados para Transbank/Webpay o Mercado Pago, según la decisión del negocio.
+- No simular como exitoso un pago real en producción.
+- Añadir webhooks con validación de firma e idempotencia.
+- Preparar cálculo de envío por comuna/región y retiro en tienda.
+- Correos de confirmación, pago, despacho y recuperación de contraseña.
+- Las credenciales externas deben venir exclusivamente de variables de entorno.
+
+FASE 6: SEO Y CONTENIDO
+
+- Generar metadatos desde la base de datos.
+- Mantener Product/Offer/Car/BreadcrumbList/Organization/LocalBusiness en JSON-LD.
+- Añadir breadcrumbs visibles.
+- Añadir Open Graph e imágenes sociales propias.
+- Incluir páginas de contacto, nosotros, garantías, devoluciones, privacidad y términos.
+- Crear contenido útil para categorías y guías de compatibilidad.
+- Gestionar filtros y navegación facetada sin generar duplicados indexables.
+- Sitemap dinámico solo con productos y vehículos activos.
+- Preparar feed para Google Merchant Center.
+- Optimizar imágenes a WebP/AVIF, dimensiones y alt text.
+- Reemplazar/eliminar imágenes y datos antiguos de Tesla que no tengan autorización comercial.
+
+FASE 7: PRODUCCIÓN Y DATOS
+
+- SQLite sirve únicamente para desarrollo actual.
+- Antes de producción, migrar el schema a PostgreSQL.
+- Crear migraciones versionadas; no depender de db push en producción.
+- Añadir Docker Compose opcional para PostgreSQL local.
+- Añadir copias de seguridad, health check y estrategia de restauración.
+- Configurar encabezados de seguridad y CSP compatible con Next.js.
+- Documentar todas las variables en .env.example sin valores secretos.
+- Crear README real con instalación, base, semilla, pruebas y despliegue.
+- Definir almacenamiento de imágenes S3-compatible o Cloudinary.
+
+FASE 8: PRUEBAS Y VERIFICACIÓN
+
+- Añadir pruebas unitarias para precios, totales, estados y validaciones.
+- Añadir pruebas de integración de repositorios y checkout.
+- Añadir pruebas E2E para:
+  1. buscar producto;
+  2. abrir ficha;
+  3. agregar al carrito;
+  4. modificar cantidad;
+  5. completar checkout;
+  6. crear pedido;
+  7. iniciar sesión como administrador;
+  8. cambiar estado del pedido;
+  9. ajustar inventario.
+- Probar autorización: un cliente no puede acceder a /admin ni ver pedidos ajenos.
+- Ejecutar lint, typecheck, pruebas, build y audit al finalizar.
+- Probar visualmente desktop y móvil.
+- Verificar robots, sitemap y JSON-LD.
+
+CRITERIOS DE TERMINACIÓN
+
+No considerar culminado hasta que exista evidencia de que:
+
+- Un cliente puede registrarse e iniciar sesión.
+- Puede buscar una autoparte y validar compatibilidad.
+- Puede agregarla al carrito y completar checkout.
+- El pedido queda persistido con totales correctos.
+- El inventario se reserva o descuenta sin quedar negativo.
+- El cliente solo ve sus pedidos.
+- El administrador puede gestionar catálogo, vehículos, stock, clientes y pedidos.
+- Los cambios administrativos quedan auditados.
+- El flujo manual/sandbox de pago y envío funciona de extremo a extremo.
+- Las páginas comerciales tienen SEO dinámico y datos estructurados válidos.
+- No se exponen secretos.
+- Las pruebas críticas pasan.
+- npm run lint, npm run typecheck y npm run build pasan.
+- npm audit --omit=dev no muestra vulnerabilidades relevantes sin una mitigación documentada.
+- Existe documentación suficiente para instalar, sembrar, probar y desplegar.
+
+ENTREGA ESPERADA
+
+Trabaja de forma autónoma y por etapas verificables. Mantén un plan actualizado. Al finalizar cada etapa, indica exactamente qué se implementó, qué comandos pasaron y qué falta. No me devuelvas únicamente recomendaciones: realiza los cambios en el repositorio y verifica su funcionamiento.

@@ -1,0 +1,3 @@
+import type { Metadata } from "next"; import { CommercialPage } from "@/components/commercial/CommercialPage"; import { siteConfig } from "@/config/site";
+export const metadata: Metadata = { title: "Contacto", description: "Contacta a ViccsAuto en Arica para repuestos, compatibilidad y vehículos." };
+export default function Page(){return <CommercialPage eyebrow="Atención local" title="Contacto"><p><b>Dirección:</b> {siteConfig.address}</p><p><b>Correo:</b> {siteConfig.email}</p><p><b>Teléfono:</b> {siteConfig.phone}</p><p>Antes de visitar, confirma disponibilidad y horario. Para compatibilidad de repuestos, ten a mano marca, modelo, año, motor y, si es posible, VIN.</p></CommercialPage>}

@@ -1,0 +1,3 @@
+import Link from "next/link";
+import { siteConfig } from "@/config/site";
+export function CommercialPage({ eyebrow, title, children }: { eyebrow: string; title: string; children: React.ReactNode }) { return <main className="mx-auto max-w-4xl px-6 py-16"><p className="font-bold uppercase tracking-widest text-blue-700">{eyebrow}</p><h1 className="mt-2 text-5xl font-black">{title}</h1><div className="prose prose-slate mt-8 max-w-none space-y-5 leading-8 text-slate-700">{children}</div><div className="mt-10 rounded-3xl bg-blue-50 p-6"><b>¿Necesitas ayuda?</b><p className="mt-1">Escríbenos a {siteConfig.email} o contáctanos por WhatsApp.</p><Link href="/contact" className="mt-3 inline-flex font-bold text-blue-700">Ver canales de contacto →</Link></div></main>; }

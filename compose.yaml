@@ -1,0 +1,21 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: viccsauto-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: viccsauto
+      POSTGRES_USER: viccsauto
+      POSTGRES_PASSWORD: viccsauto_dev
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - viccsauto_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U viccsauto -d viccsauto"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+volumes:
+  viccsauto_postgres_data:
