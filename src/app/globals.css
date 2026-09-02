@@ -3,52 +3,52 @@
 @tailwind utilities;
 
 :root {
-<<<<<<< HEAD
   --primary: #1d4ed8;
-=======
-  --primary: #274494;
->>>>>>> 833a45fadf50e643868084efb4a23165db1b06fb
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 214, 219, 220;
-  --background-end-rgb: 255, 255, 255;
+  --foreground-rgb: 15, 23, 42;
 }
-<<<<<<< HEAD
-/*
-=======
-/* 
->>>>>>> 833a45fadf50e643868084efb4a23165db1b06fb
-@media (prefers-color-scheme: dark) {
-  :root {
-    --foreground-rgb: 255, 255, 255;
-    --background-start-rgb: 0, 0, 0;
-    --background-end-rgb: 0, 0, 0;
-  }
-<<<<<<< HEAD
-} */
-=======
-} */ 
->>>>>>> 833a45fadf50e643868084efb4a23165db1b06fb
 
-/*  COMPONENTE DEL MEDIO  */
+html {
+  scroll-behavior: smooth;
+  background: #ffffff;
+}
+
+body {
+  min-height: 100vh;
+  color: rgb(var(--foreground-rgb));
+  background: #ffffff;
+}
+
+a,
+button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+::selection {
+  color: #172554;
+  background: #bfdbfe;
+}
+
+/* Componente flotante de contacto */
 .sticky-bottom-component {
   position: fixed;
-  bottom: 20px; /* Un poco de espacio desde el borde inferior */
+  bottom: 20px;
   left: 50%;
-  transform: translateX(-50%);
-  background: linear-gradient(135deg, #ffffff, #f9f9f9); /* Gradiente suave */
-  padding: 15px 20px;
-  text-align: center;
   z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   width: auto;
   max-width: 90%;
-  border-radius: 25px; /* Bordes redondeados */
-  border: 2px solid gray; /* Borde más pronunciado */
-  box-shadow: 0px -2px 10px rgba(0, 0, 0, 0.1); /* Sombra más pronunciada */
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  padding: 15px 20px;
   gap: 15px;
+  text-align: center;
+  background: #ffffff;
+  border: 2px solid #94a3b8;
+  border-radius: 25px;
+  box-shadow: 0 -2px 10px rgb(15 23 42 / 10%);
+  transform: translateX(-50%);
 }
+
 .info {
   display: flex;
   align-items: center;
@@ -56,73 +56,23 @@
 }
 
 .icon {
-  color: #25d366; /* Color verde de WhatsApp */
+  color: #25d366;
   font-size: 1.5rem;
-<<<<<<< HEAD
 }
-
-p {
-  margin: 0;
-  font-size: 1rem;
-  color: #333;
-  font-weight: 500;
-}
-html { scroll-behavior: smooth; }
-body { color: #0f172a; background: #f8fafc; }
-a, button { -webkit-tap-highlight-color: transparent; }
-::selection { background: #bfdbfe; color: #172554; }
-
-=======
-}
-
-p {
-  margin: 0;
-  font-size: 1rem;
-  color: #333;
-  font-weight: 500;
-}
-body {
-  color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-start-rgb))
-      )
-      rgb(var(--background-end-rgb))
-}
-
->>>>>>> 833a45fadf50e643868084efb4a23165db1b06fb
-
 
 @keyframes fadeIn {
-  0% {opacity: 0;}
-  100% {opacity: 1;}
-<<<<<<< HEAD
-}
-=======
-} 
->>>>>>> 833a45fadf50e643868084efb4a23165db1b06fb
-
-@-webkit-keyframes fadeIn {
-  0% {opacity: 0;}
-  100% {opacity: 1;}
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .fade-in {
-  -webkit-animation-duration: 0.5s;
-  animation-duration: 0.5s;
-  -webkit-animation-fill-mode: both;
-  animation-fill-mode: both;
-
-  -webkit-animation-name: fadeIn;
-  animation-name: fadeIn;
+  animation: fadeIn 0.5s both;
 }
 
-
 .btn-primary {
-  @apply bg-blue-600 hover:bg-blue-800 text-white py-2 px-4 rounded transition-all;
+  @apply rounded bg-blue-600 px-4 py-2 text-white transition-all hover:bg-blue-800;
 }
 
 .btn-secondary {
-  @apply bg-gray-200 hover:bg-gray-300 text-black py-2 px-4 rounded transition-all;
+  @apply rounded bg-gray-200 px-4 py-2 text-black transition-all hover:bg-gray-300;
 }

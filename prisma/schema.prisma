@@ -8,21 +8,22 @@ datasource db {
 }
 
 model User {
-  id           String     @id @default(cuid())
-  email        String     @unique
-  passwordHash String
-  firstName    String
-  lastName     String
-  phone        String?
-  role         String     @default("CUSTOMER")
-  status       String     @default("ACTIVE")
-  addresses    Address[]
-  orders       Order[]
-  carts        Cart[]
-  resetTokens  PasswordResetToken[]
-  auditLogs    AuditLog[]
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  id              String               @id @default(cuid())
+  email           String               @unique
+  passwordHash    String
+  firstName       String
+  lastName        String
+  phone           String?
+  phoneNormalized String?              @unique
+  role            String               @default("CUSTOMER")
+  status          String               @default("ACTIVE")
+  addresses       Address[]
+  orders          Order[]
+  carts           Cart[]
+  resetTokens     PasswordResetToken[]
+  auditLogs       AuditLog[]
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
 
   @@index([role, status])
 }

@@ -79,6 +79,12 @@ async function main() {
     create: { email, passwordHash: await hash(password, 12), firstName: "Administrador", lastName: "ViccsAuto", role: "ADMIN" },
   });
 
+  await prisma.user.upsert({
+    where: { email: "presencial@viccsauto.local" },
+    update: { firstName: "Cliente", lastName: "Genérico", role: "CUSTOMER", status: "SYSTEM" },
+    create: { email: "presencial@viccsauto.local", passwordHash: "SYSTEM:GENERIC", firstName: "Cliente", lastName: "Genérico", role: "CUSTOMER", status: "SYSTEM" },
+  });
+
   console.log(`Base inicializada: ${products.length} productos, ${vehicles.length} vehículos y administrador ${email}.`);
 }
 

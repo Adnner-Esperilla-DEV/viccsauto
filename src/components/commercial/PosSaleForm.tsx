@@ -108,11 +108,11 @@ export function PosSaleForm({ products }: { products: PosProduct[] }) {
 
         <section className="rounded-3xl bg-white p-6 shadow-sm">
           <h2 className="text-xl font-black">Cliente</h2>
-          <p className="mt-1 text-sm text-slate-500">Los datos son opcionales para una venta rápida de mostrador.</p>
+          <p className="mt-1 text-sm text-slate-500">Si dejas correo y teléfono vacíos, se usará Cliente genérico. Con correo o teléfono buscaremos al cliente existente y evitaremos duplicarlo.</p>
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
-            <input name="customerName" placeholder="Nombre del cliente" maxLength={120} className="rounded-xl border p-3 sm:col-span-2"/>
-            <input name="customerEmail" type="email" placeholder="Correo" className="rounded-xl border p-3"/>
-            <input name="customerPhone" placeholder="Teléfono" maxLength={30} className="rounded-xl border p-3"/>
+            <input name="customerName" autoComplete="name" placeholder="Nombre del cliente (opcional)" maxLength={120} className="rounded-xl border p-3 sm:col-span-2"/>
+            <input name="customerEmail" type="email" autoComplete="email" placeholder="Correo para identificarlo" className="rounded-xl border p-3"/>
+            <input name="customerPhone" autoComplete="tel" placeholder="Teléfono para identificarlo" maxLength={30} className="rounded-xl border p-3"/>
             <textarea name="notes" placeholder="Notas de la venta" maxLength={500} rows={3} className="rounded-xl border p-3 sm:col-span-2"/>
           </div>
         </section>

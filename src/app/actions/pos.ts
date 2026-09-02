@@ -3,8 +3,15 @@
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import type { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { getSessionUser, isStaff } from "@/lib/auth";
+import {
+  customerDisplayName,
+  GENERIC_CUSTOMER_EMAIL,
+  normalizeCustomerPhone,
+  splitCustomerName,
+} from "@/lib/customer-identity";
 import { db } from "@/lib/db";
 
 export type PosSaleState = { error?: string };
@@ -28,10 +35,82 @@ const saleSchema = z.object({
   ),
   customerName: z.string().trim().max(120),
   customerEmail: z.union([z.literal(""), z.string().trim().toLowerCase().email()]),
-  customerPhone: z.string().trim().max(30),
+  customerPhone: z.string().trim().max(30).refine(
+    (value) => !value || (normalizeCustomerPhone(value)?.length ?? 0) >= 8,
+    "Teléfono inválido",
+  ),
   paymentMethod: z.enum(["CASH", "CARD", "TRANSFER", "OTHER"]),
   notes: z.string().trim().max(500),
 });
+
+type PosCustomerInput = Pick<z.infer<typeof saleSchema>, "customerName" | "customerEmail" | "customerPhone">;
+
+async function resolvePosCustomer(tx: Prisma.TransactionClient, input: PosCustomerInput) {
+  const email = input.customerEmail || null;
+  const phoneNormalized = normalizeCustomerPhone(input.customerPhone);
+
+  if (!email && !phoneNormalized) {
+    const customer = await tx.user.upsert({
+      where: { email: GENERIC_CUSTOMER_EMAIL },
+      update: { firstName: "Cliente", lastName: "Genérico", role: "CUSTOMER", status: "SYSTEM" },
+      create: {
+        email: GENERIC_CUSTOMER_EMAIL,
+        passwordHash: `SYSTEM:${randomUUID()}`,
+        firstName: "Cliente",
+        lastName: "Genérico",
+        role: "CUSTOMER",
+        status: "SYSTEM",
+      },
+    });
+    return {
+      customer,
+      customerName: input.customerName || customerDisplayName(customer),
+      customerEmail: GENERIC_CUSTOMER_EMAIL,
+      customerPhone: input.customerPhone || "Sin teléfono",
+    };
+  }
+
+  const [byEmail, byPhone] = await Promise.all([
+    email ? tx.user.findUnique({ where: { email } }) : null,
+    phoneNormalized ? tx.user.findUnique({ where: { phoneNormalized } }) : null,
+  ]);
+  if (byEmail && byPhone && byEmail.id !== byPhone.id) throw new Error("CUSTOMER_IDENTITY_CONFLICT");
+
+  let customer = byEmail ?? byPhone;
+  const suppliedName = splitCustomerName(input.customerName);
+  if (customer) {
+    const canRefreshProfile = customer.status === "POS_ONLY";
+    customer = await tx.user.update({
+      where: { id: customer.id },
+      data: {
+        ...(canRefreshProfile && input.customerName ? suppliedName : {}),
+        ...(canRefreshProfile && email ? { email } : {}),
+        ...((canRefreshProfile || !customer.phone) && input.customerPhone
+          ? { phone: input.customerPhone, phoneNormalized }
+          : {}),
+      },
+    });
+  } else {
+    customer = await tx.user.create({
+      data: {
+        email: email ?? `pos-${randomUUID()}@viccsauto.local`,
+        passwordHash: `POS_ONLY:${randomUUID()}`,
+        ...suppliedName,
+        phone: input.customerPhone || null,
+        phoneNormalized,
+        role: "CUSTOMER",
+        status: "POS_ONLY",
+      },
+    });
+  }
+
+  return {
+    customer,
+    customerName: customerDisplayName(customer),
+    customerEmail: customer.email,
+    customerPhone: customer.phone || "Sin teléfono",
+  };
+}
 
 export async function createPosSaleAction(_previous: PosSaleState, formData: FormData): Promise<PosSaleState> {
   const user = await getSessionUser();
@@ -59,13 +138,15 @@ export async function createPosSaleAction(_previous: PosSaleState, formData: For
       });
 
       const subtotal = lines.reduce((sum, line) => sum + line.stockItem.product.price * line.quantity, 0);
+      const resolvedCustomer = await resolvePosCustomer(tx, input);
       const order = await tx.order.create({
         data: {
           number,
           checkoutToken: randomUUID(),
-          customerName: input.customerName || "Cliente presencial",
-          customerEmail: input.customerEmail || "presencial@viccsauto.local",
-          customerPhone: input.customerPhone || "Sin teléfono",
+          userId: resolvedCustomer.customer.id,
+          customerName: resolvedCustomer.customerName,
+          customerEmail: resolvedCustomer.customerEmail,
+          customerPhone: resolvedCustomer.customerPhone,
           channel: "POS",
           status: "COMPLETED",
           paymentStatus: "PAID",
@@ -128,7 +209,7 @@ export async function createPosSaleAction(_previous: PosSaleState, formData: For
           action: "CREATE_POS_SALE",
           entity: "Order",
           entityId: order.id,
-          details: JSON.stringify({ number, paymentMethod: input.paymentMethod, total: subtotal }),
+          details: JSON.stringify({ number, paymentMethod: input.paymentMethod, total: subtotal, customerId: resolvedCustomer.customer.id }),
         },
       });
     }, { isolationLevel: "Serializable" });
@@ -136,6 +217,9 @@ export async function createPosSaleAction(_previous: PosSaleState, formData: For
     console.error("No se pudo registrar la venta presencial", error instanceof Error ? error.message : "UNKNOWN");
     if (error instanceof Error && error.message === "STOCK_UNAVAILABLE") {
       return { error: "El stock cambió mientras registrabas la venta. Actualiza la página y revisa las cantidades." };
+    }
+    if (error instanceof Error && error.message === "CUSTOMER_IDENTITY_CONFLICT") {
+      return { error: "El correo y el teléfono pertenecen a clientes distintos. Revisa los datos antes de continuar." };
     }
     return { error: "No se pudo registrar la venta. Intenta nuevamente." };
   }

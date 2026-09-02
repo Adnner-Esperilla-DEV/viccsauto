@@ -1,23 +1,27 @@
 import type { Metadata } from "next";
+
 import { inter } from "@/config/fonts";
-import "./globals.css";
-<<<<<<< HEAD
 import { siteConfig } from "@/config/site";
+
+import "./globals.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
-  title: { default: "ViccsAuto | Autopartes y vehículos en Arica", template: "%s | ViccsAuto" },
+  title: {
+    default: "ViccsAuto | Autopartes y vehículos en Arica",
+    template: "%s | ViccsAuto",
+  },
   description: siteConfig.description,
   applicationName: siteConfig.name,
   alternates: { canonical: "/" },
-  openGraph: { type: "website", locale: "es_CL", siteName: siteConfig.name, title: "ViccsAuto | Autopartes y vehículos", description: siteConfig.description },
+  openGraph: {
+    type: "website",
+    locale: "es_CL",
+    siteName: siteConfig.name,
+    title: "ViccsAuto | Autopartes y vehículos",
+    description: siteConfig.description,
+  },
   robots: { index: true, follow: true },
-=======
-
-export const metadata: Metadata = {
-  title: "ViccsAuto",
-  description: "Tienda de Auto Partes",
->>>>>>> 833a45fadf50e643868084efb4a23165db1b06fb
 };
 
 export default function RootLayout({
@@ -25,9 +29,32 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const organizationData = {
+    "@context": "https://schema.org",
+    "@type": ["Organization", "AutomotiveBusiness"],
+    name: siteConfig.legalName,
+    url: siteConfig.url,
+    email: siteConfig.email,
+    telephone: siteConfig.phone,
+    address: {
+      "@type": "PostalAddress",
+      streetAddress: siteConfig.address,
+      addressLocality: "Arica",
+      addressCountry: siteConfig.country,
+    },
+  };
+
   return (
     <html lang="es-CL">
-      <body className={inter.className}><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@type": ["Organization", "AutomotiveBusiness"], name: siteConfig.legalName, url: siteConfig.url, email: siteConfig.email, telephone: siteConfig.phone, address: { "@type": "PostalAddress", streetAddress: siteConfig.address, addressLocality: "Arica", addressCountry: siteConfig.country } }).replace(/</g, "\\u003c") }}/>{children}</body>
+      <body className={inter.className}>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(organizationData).replace(/</g, "\\u003c"),
+          }}
+        />
+        {children}
+      </body>
     </html>
   );
 }

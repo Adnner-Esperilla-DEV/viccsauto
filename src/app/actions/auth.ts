@@ -6,11 +6,12 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createSession, destroySession, hashToken } from "@/lib/auth";
+import { normalizeCustomerPhone } from "@/lib/customer-identity";
 import { db } from "@/lib/db";
 import { memoryRateLimit } from "@/lib/rate-limit";
 
 const credentials = z.object({ email: z.string().trim().toLowerCase().email(), password: z.string().min(8).max(128) });
-const registration = credentials.extend({ firstName: z.string().trim().min(2).max(60), lastName: z.string().trim().min(2).max(60), phone: z.string().trim().max(30).optional() });
+const registration = credentials.extend({ firstName: z.string().trim().min(2).max(60), lastName: z.string().trim().min(2).max(60), phone: z.string().trim().max(30).refine((value) => !value || (normalizeCustomerPhone(value)?.length ?? 0) >= 8).optional() });
 
 async function clientKey(scope: string) {
   const h = await headers();
@@ -33,10 +34,25 @@ export async function registerAction(formData: FormData) {
   const allowed = await memoryRateLimit.consume(await clientKey("register"), 5, 60 * 60_000);
   const parsed = registration.safeParse(Object.fromEntries(formData));
   if (!allowed || !parsed.success) redirect("/auth/new-account?error=invalid");
-  const exists = await db.user.findUnique({ where: { email: parsed.data.email }, select: { id: true } });
-  if (exists) redirect("/auth/new-account?error=unavailable");
   const { password, ...profile } = parsed.data;
-  const user = await db.user.create({ data: { ...profile, phone: profile.phone || null, passwordHash: await hash(password, 12) } });
+  const phoneNormalized = normalizeCustomerPhone(profile.phone);
+  const [byEmail, byPhone] = await Promise.all([
+    db.user.findUnique({ where: { email: profile.email } }),
+    phoneNormalized ? db.user.findUnique({ where: { phoneNormalized } }) : null,
+  ]);
+  if (byEmail && byPhone && byEmail.id !== byPhone.id) redirect("/auth/new-account?error=unavailable");
+  const existing = byEmail ?? byPhone;
+  if (existing && (existing.role !== "CUSTOMER" || existing.status !== "POS_ONLY")) redirect("/auth/new-account?error=unavailable");
+
+  const passwordHash = await hash(password, 12);
+  const user = existing
+    ? await db.user.update({
+        where: { id: existing.id },
+        data: { ...profile, phone: profile.phone || null, phoneNormalized, passwordHash, status: "ACTIVE" },
+      })
+    : await db.user.create({
+        data: { ...profile, phone: profile.phone || null, phoneNormalized, passwordHash },
+      });
   await createSession(user);
   redirect("/products?welcome=1");
 }
