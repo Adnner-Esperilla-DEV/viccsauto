@@ -1,7 +1,17 @@
 import Link from "next/link";
-import { registerAction } from "@/app/actions/auth";
+
+import { NewAccountForm } from "./NewAccountForm";
 
 export default async function NewAccountPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
   const { error } = await searchParams;
-  return <main className="mx-auto flex min-h-screen max-w-lg flex-col justify-center px-6 py-12"><p className="font-bold uppercase tracking-widest text-blue-700">Mi cuenta</p><h1 className="mt-2 text-4xl font-black">Crear cuenta</h1><p className="mt-4 text-slate-600">Guarda tus datos y consulta el estado de tus pedidos.</p>{error && <p role="alert" className="mt-5 rounded-2xl bg-red-50 p-4 text-sm text-red-700">No pudimos crear la cuenta. Revisa los datos o utiliza otro correo.</p>}<form action={registerAction} className="mt-7 grid gap-4 sm:grid-cols-2"><label className="text-sm font-bold">Nombre<input required name="firstName" minLength={2} autoComplete="given-name" className="mt-2 w-full rounded-2xl border p-3 font-normal" /></label><label className="text-sm font-bold">Apellido<input required name="lastName" minLength={2} autoComplete="family-name" className="mt-2 w-full rounded-2xl border p-3 font-normal" /></label><label className="text-sm font-bold sm:col-span-2">Correo<input required type="email" name="email" autoComplete="email" className="mt-2 w-full rounded-2xl border p-3 font-normal" /></label><label className="text-sm font-bold sm:col-span-2">Teléfono<input name="phone" autoComplete="tel" className="mt-2 w-full rounded-2xl border p-3 font-normal" /></label><label className="text-sm font-bold sm:col-span-2">Contraseña<input required type="password" minLength={8} maxLength={128} name="password" autoComplete="new-password" className="mt-2 w-full rounded-2xl border p-3 font-normal" /></label><button className="rounded-full bg-blue-700 px-6 py-3 font-bold text-white sm:col-span-2">Crear mi cuenta</button></form><Link href="/auth/login" className="mt-5 text-center text-sm font-bold text-blue-700">Ya tengo cuenta</Link></main>;
+
+  return (
+    <main className="mx-auto flex min-h-screen max-w-lg flex-col justify-center px-6 py-12">
+      <p className="font-bold uppercase tracking-widest text-blue-700">Mi cuenta</p>
+      <h1 className="mt-2 text-4xl font-black">Crear cuenta</h1>
+      <p className="mt-4 text-slate-600">Guarda tus datos y consulta el estado de tus pedidos.</p>
+      <NewAccountForm error={error} />
+      <Link href="/auth/login" className="mt-5 text-center text-sm font-bold text-blue-700">Ya tengo cuenta</Link>
+    </main>
+  );
 }

@@ -11,7 +11,12 @@ import { db } from "@/lib/db";
 import { memoryRateLimit } from "@/lib/rate-limit";
 
 const credentials = z.object({ email: z.string().trim().toLowerCase().email(), password: z.string().min(8).max(128) });
-const registration = credentials.extend({ firstName: z.string().trim().min(2).max(60), lastName: z.string().trim().min(2).max(60), phone: z.string().trim().max(30).refine((value) => !value || (normalizeCustomerPhone(value)?.length ?? 0) >= 8).optional() });
+const registration = credentials.extend({
+  confirmPassword: z.string().min(8).max(128),
+  firstName: z.string().trim().min(2).max(60),
+  lastName: z.string().trim().min(2).max(60),
+  phone: z.string().trim().max(30).refine((value) => !value || (normalizeCustomerPhone(value)?.length ?? 0) >= 8).optional(),
+});
 
 async function clientKey(scope: string) {
   const h = await headers();
@@ -27,14 +32,16 @@ export async function loginAction(formData: FormData) {
   const valid = await compare(parsed.data.password, user.passwordHash);
   if (!valid) redirect("/auth/login?error=credentials");
   await createSession(user);
-  redirect(user.role === "ADMIN" || user.role === "STAFF" ? "/admin" : "/orders");
+  redirect(user.role === "ADMIN" || user.role === "STAFF" ? "/admin" : "/account");
 }
 
 export async function registerAction(formData: FormData) {
   const allowed = await memoryRateLimit.consume(await clientKey("register"), 5, 60 * 60_000);
   const parsed = registration.safeParse(Object.fromEntries(formData));
   if (!allowed || !parsed.success) redirect("/auth/new-account?error=invalid");
-  const { password, ...profile } = parsed.data;
+  if (parsed.data.password !== parsed.data.confirmPassword) redirect("/auth/new-account?error=password-match");
+  const { password, confirmPassword, ...profile } = parsed.data;
+  void confirmPassword;
   const phoneNormalized = normalizeCustomerPhone(profile.phone);
   const [byEmail, byPhone] = await Promise.all([
     db.user.findUnique({ where: { email: profile.email } }),

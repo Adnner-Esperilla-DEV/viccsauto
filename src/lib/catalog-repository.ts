@@ -1,6 +1,6 @@
 import "server-only";
 import type { Prisma } from "@prisma/client";
-import type { AutomotiveProduct, CategorySummary, VehicleListing } from "@/interfaces";
+import type { AutomotiveProduct, CategorySummary, ProductVehicleFilterOption, VehicleListing } from "@/interfaces";
 import { db } from "@/lib/db";
 
 const productInclude = {
@@ -56,15 +56,21 @@ export function mapProduct(record: ProductRecord): AutomotiveProduct {
   };
 }
 
-export async function listProducts(filters: { query?: string; category?: string; featured?: boolean } = {}) {
+export async function listProducts(filters: { query?: string; category?: string; featured?: boolean; makeId?: string; modelId?: string; inStockOnly?: boolean } = {}) {
   const query = filters.query?.trim();
   const searchTerms = query?.split(/\s+/).filter(Boolean) ?? [];
   const records = await db.product.findMany({
     where: {
       isActive: true,
+      stock: filters.inStockOnly ? { gt: 0 } : undefined,
       featured: filters.featured,
       images: filters.featured === true ? { some: {} } : undefined,
-      category: filters.category ? { slug: filters.category, isActive: true } : undefined,
+      category: filters.category ? { slug: filters.category, isActive: true } : { isActive: true },
+      compatibility: filters.modelId
+        ? { some: { vehicleModelId: filters.modelId, vehicleModel: filters.makeId ? { makeId: filters.makeId } : undefined } }
+        : filters.makeId
+          ? { some: { vehicleModel: { makeId: filters.makeId } } }
+          : undefined,
       AND: searchTerms.map((term) => ({
         OR: [
           { name: { contains: term, mode: "insensitive" } },
@@ -80,6 +86,39 @@ export async function listProducts(filters: { query?: string; category?: string;
     orderBy: [{ featured: "desc" }, { name: "asc" }],
   });
   return records.map(mapProduct);
+}
+
+export async function listProductVehicleFilterOptions(): Promise<ProductVehicleFilterOption[]> {
+  const compatibility = await db.productCompatibility.findMany({
+    where: {
+      product: { isActive: true, stock: { gt: 0 }, category: { isActive: true } },
+      vehicleModel: { isActive: true, make: { isActive: true } },
+    },
+    select: {
+      vehicleModel: {
+        select: {
+          id: true,
+          name: true,
+          make: { select: { id: true, name: true } },
+        },
+      },
+    },
+    orderBy: [
+      { vehicleModel: { make: { name: "asc" } } },
+      { vehicleModel: { name: "asc" } },
+    ],
+  });
+
+  const makes = new Map<string, ProductVehicleFilterOption>();
+  for (const row of compatibility) {
+    const { make } = row.vehicleModel;
+    const option = makes.get(make.id) ?? { id: make.id, name: make.name, models: [] };
+    if (!option.models.some((model) => model.id === row.vehicleModel.id)) {
+      option.models.push({ id: row.vehicleModel.id, name: row.vehicleModel.name });
+    }
+    makes.set(make.id, option);
+  }
+  return [...makes.values()];
 }
 
 export async function getProductBySlug(slug: string) {

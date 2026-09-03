@@ -53,3 +53,9 @@ export interface CategorySummary {
   description: string;
   icon: AutomotiveProduct["icon"];
 }
+
+export interface ProductVehicleFilterOption {
+  id: string;
+  name: string;
+  models: Array<{ id: string; name: string }>;
+}

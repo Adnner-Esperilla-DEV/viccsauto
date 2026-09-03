@@ -22,6 +22,8 @@ model User {
   carts           Cart[]
   resetTokens     PasswordResetToken[]
   auditLogs       AuditLog[]
+  vehicleImports  VehicleImport[]       @relation("ImportCustomer")
+  importNotes     VehicleImportNote[]   @relation("ImportNoteAuthor")
   createdAt       DateTime             @default(now())
   updatedAt       DateTime             @updatedAt
 
@@ -83,14 +85,15 @@ model Brand {
 }
 
 model VehicleMake {
-  id        String         @id @default(cuid())
-  sourceId  Int?           @unique
-  name      String         @unique
-  slug      String         @unique
-  isActive  Boolean        @default(true)
-  models    VehicleModel[]
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @updatedAt
+  id             String          @id @default(cuid())
+  sourceId       Int?            @unique
+  name           String          @unique
+  slug           String          @unique
+  isActive       Boolean         @default(true)
+  models         VehicleModel[]
+  vehicleImports VehicleImport[] @relation("ImportMake")
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
 }
 
 model VehicleModel {
@@ -102,6 +105,7 @@ model VehicleModel {
   slug          String
   isActive      Boolean                @default(true)
   compatibility ProductCompatibility[]
+  vehicleImports VehicleImport[]       @relation("ImportModel")
   createdAt     DateTime               @default(now())
   updatedAt     DateTime               @updatedAt
 
@@ -214,6 +218,89 @@ model VehicleImage {
   position  Int     @default(0)
 
   @@index([vehicleId, position])
+}
+
+model VehicleImport {
+  id                String                    @id @default(cuid())
+  customerId        String
+  customer          User                      @relation("ImportCustomer", fields: [customerId], references: [id], onDelete: Restrict)
+  vin               String                    @unique
+  year              Int
+  makeId            String?
+  makeRecord        VehicleMake?              @relation("ImportMake", fields: [makeId], references: [id], onDelete: SetNull)
+  make              String
+  modelId           String?
+  modelRecord       VehicleModel?             @relation("ImportModel", fields: [modelId], references: [id], onDelete: SetNull)
+  model             String
+  color             String
+  lotNumber         String?
+  weightKg          Int?
+  valueUsd          Decimal?                  @db.Decimal(12, 2)
+  loadType          String?
+  destinationPort   String?
+  receivedDate      DateTime?
+  hazmat            Boolean                   @default(false)
+  fuel              String?
+  keyStatus         String                    @default("UNKNOWN")
+  titleStatus       String                    @default("PENDING")
+  titleNumber       String?
+  titleState        String?
+  scheduleB         String?
+  customerParty     String?
+  shipper           String?
+  consignee         String?
+  notifyParty       String?
+  exportReference   String?
+  status            String                    @default("INCOMING")
+  images            VehicleImportImage[]
+  attachments       VehicleImportAttachment[]
+  notes             VehicleImportNote[]
+  createdAt         DateTime                  @default(now())
+  updatedAt         DateTime                  @updatedAt
+
+  @@index([customerId, updatedAt])
+  @@index([makeId])
+  @@index([modelId])
+  @@index([status, updatedAt])
+  @@index([lotNumber])
+}
+
+model VehicleImportImage {
+  id          String        @id @default(cuid())
+  importId    String
+  vehicleImport VehicleImport @relation(fields: [importId], references: [id], onDelete: Cascade)
+  filename    String
+  mimeType    String
+  data        Bytes
+  position    Int           @default(0)
+
+  @@index([importId, position])
+}
+
+model VehicleImportAttachment {
+  id          String        @id @default(cuid())
+  importId    String
+  vehicleImport VehicleImport @relation(fields: [importId], references: [id], onDelete: Cascade)
+  filename    String
+  mimeType    String
+  data        Bytes
+  size        Int
+  createdAt   DateTime      @default(now())
+
+  @@index([importId, createdAt])
+}
+
+model VehicleImportNote {
+  id                String        @id @default(cuid())
+  importId          String
+  vehicleImport     VehicleImport @relation(fields: [importId], references: [id], onDelete: Cascade)
+  authorId          String?
+  author            User?         @relation("ImportNoteAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+  body              String
+  visibleToCustomer Boolean       @default(true)
+  createdAt         DateTime      @default(now())
+
+  @@index([importId, createdAt])
 }
 
 model InventoryLocation {
