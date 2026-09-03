@@ -152,8 +152,11 @@ export async function createPosSaleAction(_previous: PosSaleState, formData: For
           paymentStatus: "PAID",
           fulfillmentStatus: "DELIVERED",
           subtotal,
+          shippingTotal: 0,
+          discountTotal: 0,
+          taxTotal: 0,
           total: subtotal,
-          shippingAddress: `Venta presencial · ${[...new Set(lines.map((line) => line.stockItem.location.name))].join(", ")}`,
+          shippingAddress: JSON.stringify({ type: "POS", label: "Venta presencial en Arica", city: "Arica", region: "Arica y Parinacota", destinationZone: "PICKUP_ARICA", taxRateBps: 0, shippingPayment: "NONE", locations: [...new Set(lines.map((line) => line.stockItem.location.name))] }),
           notes: input.notes || null,
           items: {
             create: lines.map(({ stockItem, quantity }) => ({
@@ -172,7 +175,7 @@ export async function createPosSaleAction(_previous: PosSaleState, formData: For
               status: "PAID",
               amount: subtotal,
               currency: "CLP",
-              metadata: JSON.stringify({ cashierId: user!.id, method: input.paymentMethod }),
+              metadata: JSON.stringify({ cashierId: user!.id, method: input.paymentMethod, destinationZone: "PICKUP_ARICA", taxRateBps: 0, shippingPayment: "NONE" }),
             },
           },
           shipments: {

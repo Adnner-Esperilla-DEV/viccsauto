@@ -453,3 +453,9 @@ model AuditLog {
 
   @@index([entity, entityId, createdAt])
 }
+
+model AppSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}

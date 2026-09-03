@@ -82,7 +82,7 @@ export default async function OrdersAdminPage({ searchParams }: OrdersAdminPageP
             <div className="flex flex-wrap justify-between gap-4">
               <div>
                 <div className="flex items-center gap-2">
-                  <b>{order.number}</b>
+                  <Link href={`/orders/${order.id}`} className="font-bold hover:text-blue-700 hover:underline">{order.number}</Link>
                   <span className={order.channel === "POS" ? "rounded-full bg-violet-50 px-2 py-0.5 text-xs font-bold text-violet-700" : "rounded-full bg-blue-50 px-2 py-0.5 text-xs font-bold text-blue-700"}>
                     {order.channel === "POS" ? "PRESENCIAL" : "EN LÍNEA"}
                   </span>
@@ -93,7 +93,7 @@ export default async function OrdersAdminPage({ searchParams }: OrdersAdminPageP
                   {orderDate(order.createdAt)}
                 </span>
               </div>
-              <strong className="text-xl text-slate-950">{formatPrice(order.total)}</strong>
+              <div className="text-right"><strong className="text-xl text-slate-950">{formatPrice(order.total)}</strong><small className="mt-1 block text-slate-500">Subtotal {formatPrice(order.subtotal)} · Tributos {formatPrice(order.taxTotal)}</small></div>
             </div>
 
             <form action={updateOrderAction} className="mt-6 grid items-end gap-4 md:grid-cols-2 xl:grid-cols-[1fr_1fr_1.25fr_1fr_auto]">

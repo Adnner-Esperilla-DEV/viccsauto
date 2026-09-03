@@ -35,5 +35,5 @@ export async function getOrCreateCart(userId?: string) {
 export async function getCartSummary() {
   const cart = await readCart();
   const items = cart?.items ?? [];
-  return { cart, items, ...calculateTotals(items, "shipping"), count: items.reduce((sum, item) => sum + item.quantity, 0) };
+  return { cart, items, ...calculateTotals(items, "ARICA"), count: items.reduce((sum, item) => sum + item.quantity, 0) };
 }

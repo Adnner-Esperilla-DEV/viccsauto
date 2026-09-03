@@ -219,7 +219,7 @@ export function PosSaleForm({ products }: { products: PosProduct[] }) {
         <button disabled={pending || lines.length === 0} className="mt-6 w-full rounded-full bg-blue-600 px-5 py-3 font-black text-white disabled:cursor-not-allowed disabled:opacity-50">
           {pending ? "Registrando venta…" : "Registrar venta y descontar stock"}
         </button>
-        <p className="mt-3 text-center text-xs text-slate-500">La operación queda registrada como pagada y entregada.</p>
+        <p className="mt-3 text-center text-xs text-slate-500">Venta presencial en Arica: sin despacho ni IVA/tributos adicionales. La operación queda pagada y entregada.</p>
       </aside>
     </form>
   );

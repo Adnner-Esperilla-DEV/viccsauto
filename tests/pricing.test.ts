@@ -1,9 +1,36 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { calculateTotals, FREE_SHIPPING_FROM, STANDARD_SHIPPING } from "../src/lib/pricing";
+
+import { calculateTotals, DEFAULT_CUSTOMS_TAX_RATE_BPS } from "../src/lib/pricing";
 import { canTransitionOrder } from "../src/lib/order-states";
 
-test("calcula subtotal y envío estándar", () => { assert.deepEqual(calculateTotals([{ unitPrice: 10_000, quantity: 2 }], "shipping"), { subtotal: 20_000, shippingTotal: STANDARD_SHIPPING, discountTotal: 0, taxTotal: 0, total: 25_990 }); });
-test("envío gratis desde el umbral", () => { assert.equal(calculateTotals([{ unitPrice: FREE_SHIPPING_FROM, quantity: 1 }], "shipping").shippingTotal, 0); });
-test("retiro en tienda no cobra despacho", () => { assert.equal(calculateTotals([{ unitPrice: 1_000, quantity: 1 }], "pickup").total, 1_000); });
-test("impide saltos inválidos de estado", () => { assert.equal(canTransitionOrder("PENDING", "COMPLETED"), false); assert.equal(canTransitionOrder("PENDING", "CONFIRMED"), true); assert.equal(canTransitionOrder("COMPLETED", "COMPLETED"), true); });
+const items = [{ unitPrice: 100_000, quantity: 1 }];
+
+test("venta presencial en Arica no cobra envío ni tributos", () => {
+  assert.deepEqual(calculateTotals(items, "PICKUP_ARICA"), { subtotal: 100_000, shippingTotal: 0, discountTotal: 0, taxTotal: 0, total: 100_000 });
+});
+
+test("despacho en Arica es gratuito y sin tributos adicionales", () => {
+  assert.equal(calculateTotals(items, "ARICA").total, 100_000);
+});
+
+test("Iquique no suma transporte ni tributos al total cobrado", () => {
+  assert.deepEqual(calculateTotals(items, "IQUIQUE"), { subtotal: 100_000, shippingTotal: 0, discountTotal: 0, taxTotal: 0, total: 100_000 });
+});
+
+test("resto de Chile aplica la tasa configurable de internación", () => {
+  const totals = calculateTotals(items, "REST_OF_CHILE", DEFAULT_CUSTOMS_TAX_RATE_BPS);
+  assert.equal(totals.taxTotal, 26_140);
+  assert.equal(totals.total, 126_140);
+  assert.equal(totals.shippingTotal, 0);
+});
+
+test("redondea tributos a pesos completos", () => {
+  assert.equal(calculateTotals([{ unitPrice: 999, quantity: 1 }], "REST_OF_CHILE", 2_614).taxTotal, 261);
+});
+
+test("impide saltos inválidos de estado", () => {
+  assert.equal(canTransitionOrder("PENDING", "COMPLETED"), false);
+  assert.equal(canTransitionOrder("PENDING", "CONFIRMED"), true);
+  assert.equal(canTransitionOrder("COMPLETED", "COMPLETED"), true);
+});
