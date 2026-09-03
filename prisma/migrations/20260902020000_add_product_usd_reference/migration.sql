@@ -1,0 +1,3 @@
+ALTER TABLE "Product"
+ADD COLUMN "priceUsd" DECIMAL(12, 2),
+ADD COLUMN "usdToClpRate" DECIMAL(12, 4);

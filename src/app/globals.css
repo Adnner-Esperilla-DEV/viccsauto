@@ -28,6 +28,51 @@ button {
   background: #bfdbfe;
 }
 
+select:not([multiple]) {
+  color-scheme: light;
+  cursor: pointer;
+  appearance: none;
+  padding-right: 2.75rem;
+  color: #0f172a;
+  background-color: #ffffff;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%23475569' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 8 4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.9rem center;
+  background-size: 1rem;
+}
+
+select:not([multiple]):hover {
+  border-color: #94a3b8;
+}
+
+select:not([multiple]):disabled {
+  cursor: not-allowed;
+  color: #94a3b8;
+  background-color: #f1f5f9;
+  opacity: 1;
+}
+
+select option,
+select optgroup {
+  color: #0f172a;
+  background-color: #ffffff;
+  font-weight: 500;
+}
+
+select option {
+  padding: 0.75rem 1rem;
+}
+
+select option:checked {
+  color: #1d4ed8;
+  background: #dbeafe linear-gradient(0deg, #dbeafe 0%, #dbeafe 100%);
+  font-weight: 700;
+}
+
+select option:disabled {
+  color: #94a3b8;
+}
+
 /* Componente flotante de contacto */
 .sticky-bottom-component {
   position: fixed;

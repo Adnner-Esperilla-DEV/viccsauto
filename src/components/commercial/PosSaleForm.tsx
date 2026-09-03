@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useMemo, useState } from "react";
+import { useActionState, useEffect, useMemo, useRef, useState } from "react";
+import { IoCheckmarkOutline, IoChevronDownOutline } from "react-icons/io5";
 import { createPosSaleAction, type PosSaleState } from "@/app/actions/pos";
 
 export type PosProduct = {
@@ -9,6 +10,7 @@ export type PosProduct = {
   sku: string;
   name: string;
   brand?: string;
+  imageId?: string;
   price: number;
   available: number;
   location: string;
@@ -17,9 +19,94 @@ export type PosProduct = {
 type SaleLine = { inventoryItemId: string; quantity: number };
 
 const money = new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP", maximumFractionDigits: 0 });
+const paymentMethods = [
+  { value: "CASH", label: "Efectivo" },
+  { value: "CARD", label: "Tarjeta" },
+  { value: "TRANSFER", label: "Transferencia" },
+  { value: "OTHER", label: "Otro" },
+] as const;
 
 function normalized(value: string) {
   return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+}
+
+function ProductThumbnail({ product, compact = false }: { product: PosProduct; compact?: boolean }) {
+  const sizeClass = compact ? "h-12 w-16" : "h-14 w-[72px]";
+
+  return product.imageId ? (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={`/api/product-images/${product.imageId}`}
+      alt={`Portada de ${product.name}`}
+      className={`${sizeClass} shrink-0 rounded-xl border border-slate-200 bg-white object-contain`}
+    />
+  ) : (
+    <span className={`${sizeClass} grid shrink-0 place-items-center rounded-xl border border-dashed border-slate-300 bg-slate-50 px-1 text-center text-[10px] font-bold uppercase leading-tight text-slate-400`}>
+      Sin foto
+    </span>
+  );
+}
+
+function PaymentMethodSelect() {
+  const [open, setOpen] = useState(false);
+  const [value, setValue] = useState<(typeof paymentMethods)[number]["value"]>("CASH");
+  const containerRef = useRef<HTMLDivElement>(null);
+  const selected = paymentMethods.find((method) => method.value === value) ?? paymentMethods[0];
+
+  useEffect(() => {
+    if (!open) return;
+    const closeOutside = (event: PointerEvent) => {
+      if (!containerRef.current?.contains(event.target as Node)) setOpen(false);
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("pointerdown", closeOutside);
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOutside);
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [open]);
+
+  return (
+    <div ref={containerRef} className="relative">
+      <input type="hidden" name="paymentMethod" value={value} />
+      <button
+        type="button"
+        aria-label={`Medio de pago: ${selected.label}`}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-controls="payment-method-options"
+        onClick={() => setOpen((current) => !current)}
+        className={`flex w-full items-center justify-between gap-3 rounded-xl border bg-white px-4 py-3 text-left font-semibold text-slate-900 outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-100 ${open ? "border-blue-600 ring-4 ring-blue-100" : "border-slate-300 hover:border-slate-400"}`}
+      >
+        <span>{selected.label}</span>
+        <IoChevronDownOutline className={`h-5 w-5 text-slate-500 transition-transform ${open ? "rotate-180" : ""}`} aria-hidden="true" />
+      </button>
+
+      {open && (
+        <div id="payment-method-options" role="listbox" aria-label="Medio de pago" className="absolute inset-x-0 top-full z-40 mt-2 overflow-hidden rounded-2xl border border-slate-200 bg-white p-2 shadow-2xl shadow-slate-900/15">
+          {paymentMethods.map((method) => {
+            const active = method.value === value;
+            return (
+              <button
+                key={method.value}
+                type="button"
+                role="option"
+                aria-selected={active}
+                onClick={() => { setValue(method.value); setOpen(false); }}
+                className={`flex w-full items-center justify-between rounded-xl px-4 py-3 text-left text-sm font-semibold transition ${active ? "bg-blue-600 text-white" : "text-slate-700 hover:bg-blue-50 hover:text-blue-800"}`}
+              >
+                <span>{method.label}</span>
+                {active && <IoCheckmarkOutline className="h-5 w-5" aria-hidden="true" />}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function PosSaleForm({ products }: { products: PosProduct[] }) {
@@ -84,6 +171,7 @@ export function PosSaleForm({ products }: { products: PosProduct[] }) {
               <div className="absolute inset-x-0 top-full z-30 mt-1 overflow-hidden rounded-2xl border bg-white py-1 shadow-xl">
                 {matches.length ? matches.map((product) => (
                   <button key={product.inventoryItemId} type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => addProduct(product)} className="flex w-full items-center gap-4 px-4 py-3 text-left hover:bg-blue-50">
+                    <ProductThumbnail product={product} />
                     <span className="min-w-0 flex-1"><b className="block truncate">{product.name}</b><small className="text-slate-500">{product.sku} · {product.location}</small></span>
                     <span className="text-right"><b className="block text-blue-700">{money.format(product.price)}</b><small className="text-slate-500">{product.available} disponibles</small></span>
                   </button>
@@ -95,7 +183,8 @@ export function PosSaleForm({ products }: { products: PosProduct[] }) {
           {saleLines.length ? (
             <div className="mt-6 divide-y">
               {saleLines.map(({ product, quantity }) => (
-                <article key={product.inventoryItemId} className="grid items-center gap-3 py-4 sm:grid-cols-[1fr_100px_120px_auto]">
+                <article key={product.inventoryItemId} className="grid items-center gap-3 py-4 sm:grid-cols-[64px_minmax(0,1fr)_100px_120px_auto]">
+                  <ProductThumbnail product={product} compact />
                   <div className="min-w-0"><b className="block truncate">{product.name}</b><small className="text-slate-500">{product.sku} · Stock: {product.available}</small></div>
                   <input aria-label={`Cantidad de ${product.name}`} type="number" min={1} max={product.available} value={quantity} onChange={(event) => changeQuantity(product.inventoryItemId, Number(event.target.value), product.available)} className="rounded-xl border p-2 text-center"/>
                   <strong className="text-right">{money.format(product.price * quantity)}</strong>
@@ -118,23 +207,19 @@ export function PosSaleForm({ products }: { products: PosProduct[] }) {
         </section>
       </div>
 
-      <aside className="h-fit rounded-3xl bg-slate-950 p-6 text-white shadow-lg lg:sticky lg:top-6">
-        <p className="text-sm font-bold uppercase tracking-widest text-blue-300">Resumen</p>
-        <div className="mt-5 flex justify-between text-slate-300"><span>Unidades</span><span>{lines.reduce((sum, line) => sum + line.quantity, 0)}</span></div>
-        <div className="mt-3 flex items-end justify-between border-t border-white/10 pt-5"><span className="font-bold">Total</span><strong className="text-3xl text-blue-300">{money.format(total)}</strong></div>
-        <label className="mt-6 grid gap-2 text-sm font-bold">Medio de pago
-          <select name="paymentMethod" defaultValue="CASH" className="rounded-xl border border-white/20 bg-slate-900 p-3 text-white">
-            <option value="CASH">Efectivo</option>
-            <option value="CARD">Tarjeta</option>
-            <option value="TRANSFER">Transferencia</option>
-            <option value="OTHER">Otro</option>
-          </select>
-        </label>
-        {state.error && <p role="alert" className="mt-5 rounded-xl bg-red-500/20 p-3 text-sm text-red-100">{state.error}</p>}
+      <aside className="h-fit rounded-3xl border border-blue-100 bg-gradient-to-br from-white to-blue-50 p-6 text-slate-900 shadow-lg lg:sticky lg:top-6">
+        <p className="text-sm font-bold uppercase tracking-widest text-blue-700">Resumen</p>
+        <div className="mt-5 flex justify-between text-slate-600"><span>Unidades</span><span className="font-bold text-slate-900">{lines.reduce((sum, line) => sum + line.quantity, 0)}</span></div>
+        <div className="mt-3 flex items-end justify-between border-t border-blue-100 pt-5"><span className="font-bold">Total</span><strong className="text-3xl text-blue-700">{money.format(total)}</strong></div>
+        <div className="mt-6 grid gap-2 text-sm font-bold">
+          <span>Medio de pago</span>
+          <PaymentMethodSelect />
+        </div>
+        {state.error && <p role="alert" className="mt-5 rounded-xl bg-red-50 p-3 text-sm font-semibold text-red-700">{state.error}</p>}
         <button disabled={pending || lines.length === 0} className="mt-6 w-full rounded-full bg-blue-600 px-5 py-3 font-black text-white disabled:cursor-not-allowed disabled:opacity-50">
           {pending ? "Registrando venta…" : "Registrar venta y descontar stock"}
         </button>
-        <p className="mt-3 text-center text-xs text-slate-400">La operación queda registrada como pagada y entregada.</p>
+        <p className="mt-3 text-center text-xs text-slate-500">La operación queda registrada como pagada y entregada.</p>
       </aside>
     </form>
   );

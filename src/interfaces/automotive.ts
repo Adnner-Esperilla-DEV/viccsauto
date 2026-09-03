@@ -24,6 +24,8 @@ export interface AutomotiveProduct {
   oemCodes: string[];
   compatibility: Compatibility[];
   featured?: boolean;
+  image?: string;
+  images?: string[];
   icon: "brake" | "engine" | "light" | "battery" | "body";
 }
 
@@ -41,6 +43,8 @@ export interface VehicleListing {
   location: string;
   description: string;
   featured?: boolean;
+  image?: string;
+  images?: string[];
 }
 
 export interface CategorySummary {

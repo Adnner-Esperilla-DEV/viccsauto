@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 const productInclude = {
   category: true,
   brand: true,
+  images: { orderBy: { position: "asc" as const }, take: 5, select: { id: true } },
   compatibility: { include: { vehicleModel: { include: { make: true } } } },
 } satisfies Prisma.ProductInclude;
 
@@ -26,6 +27,7 @@ function years(from: number | null, to: number | null) {
 }
 
 export function mapProduct(record: ProductRecord): AutomotiveProduct {
+  const images = record.images.map((image) => `/api/product-images/${image.id}`);
   return {
     id: record.id,
     slug: record.slug,
@@ -43,6 +45,8 @@ export function mapProduct(record: ProductRecord): AutomotiveProduct {
     oemCodes: stringArray(record.oemCodes),
     icon: record.icon as AutomotiveProduct["icon"],
     featured: record.featured,
+    image: images[0],
+    images,
     compatibility: record.compatibility.map((item) => ({
       make: item.vehicleModel.make.name,
       model: item.vehicleModel.name,
@@ -59,6 +63,7 @@ export async function listProducts(filters: { query?: string; category?: string;
     where: {
       isActive: true,
       featured: filters.featured,
+      images: filters.featured === true ? { some: {} } : undefined,
       category: filters.category ? { slug: filters.category, isActive: true } : undefined,
       AND: searchTerms.map((term) => ({
         OR: [
@@ -91,7 +96,14 @@ export async function getCategoryBySlug(slug: string) {
   return db.category.findFirst({ where: { slug, isActive: true } });
 }
 
-function mapVehicle(row: Awaited<ReturnType<typeof db.vehicle.findFirst>> extends infer T ? NonNullable<T> : never): VehicleListing {
+const vehicleInclude = {
+  images: { orderBy: { position: "asc" as const }, take: 10, select: { id: true } },
+} satisfies Prisma.VehicleInclude;
+
+type VehicleRecord = Prisma.VehicleGetPayload<{ include: typeof vehicleInclude }>;
+
+function mapVehicle(row: VehicleRecord): VehicleListing {
+  const images = row.images.map((image) => `/api/vehicle-images/${image.id}`);
   return {
     id: row.id,
     slug: row.slug,
@@ -106,15 +118,17 @@ function mapVehicle(row: Awaited<ReturnType<typeof db.vehicle.findFirst>> extend
     location: row.location,
     description: row.description,
     featured: row.featured,
+    image: images[0],
+    images,
   };
 }
 
 export async function listVehicles(featured?: boolean) {
-  const rows = await db.vehicle.findMany({ where: { status: "AVAILABLE", featured }, orderBy: [{ featured: "desc" }, { createdAt: "desc" }] });
+  const rows = await db.vehicle.findMany({ where: { status: "AVAILABLE", featured }, include: vehicleInclude, orderBy: [{ featured: "desc" }, { createdAt: "desc" }] });
   return rows.map(mapVehicle);
 }
 
 export async function getVehicleBySlug(slug: string) {
-  const row = await db.vehicle.findFirst({ where: { slug, status: "AVAILABLE" } });
+  const row = await db.vehicle.findFirst({ where: { slug, status: "AVAILABLE" }, include: vehicleInclude });
   return row ? mapVehicle(row) : null;
 }

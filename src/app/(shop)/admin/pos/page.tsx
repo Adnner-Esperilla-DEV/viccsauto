@@ -11,7 +11,15 @@ export default async function PosPage({ searchParams }: { searchParams: Promise<
   const [inventory, recentSales] = await Promise.all([
     db.inventoryItem.findMany({
       where: { quantity: { gt: 0 }, product: { isActive: true }, location: { isActive: true } },
-      include: { product: { include: { brand: true } }, location: true },
+      include: {
+        product: {
+          include: {
+            brand: true,
+            images: { orderBy: { position: "asc" }, take: 1, select: { id: true } },
+          },
+        },
+        location: true,
+      },
       orderBy: { product: { name: "asc" } },
     }),
     db.order.findMany({ where: { channel: "POS" }, include: { payments: true }, orderBy: { createdAt: "desc" }, take: 8 }),
@@ -25,6 +33,7 @@ export default async function PosPage({ searchParams }: { searchParams: Promise<
       sku: item.product.sku,
       name: item.product.name,
       brand: item.product.brand?.name,
+      imageId: item.product.images[0]?.id,
       price: item.product.price,
       available,
       location: item.location.name,

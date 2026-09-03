@@ -125,6 +125,8 @@ model Product {
   condition        String                 @default("NEW")
   price            Int
   compareAtPrice   Int?
+  priceUsd         Decimal?               @db.Decimal(12, 2)
+  usdToClpRate     Decimal?               @db.Decimal(12, 4)
   cost             Int?
   stock            Int                    @default(0)
   lowStockAt       Int                    @default(3)
@@ -195,11 +197,23 @@ model Vehicle {
   features     String   @default("[]")
   status       String   @default("AVAILABLE")
   featured     Boolean  @default(false)
+  images       VehicleImage[]
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   @@index([status, featured])
   @@index([make, model, year])
+}
+
+model VehicleImage {
+  id        String  @id @default(cuid())
+  vehicleId String
+  vehicle   Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  url       String
+  alt       String
+  position  Int     @default(0)
+
+  @@index([vehicleId, position])
 }
 
 model InventoryLocation {

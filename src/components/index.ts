@@ -7,4 +7,5 @@ export * from './ui/top-menu/TopMenu';
 export * from './ui/footer/Footer';
 export * from './automotive/CategoryIcon';
 export * from './automotive/PartCard';
+export * from './automotive/ProductImageGallery';
 export * from './automotive/VehicleCard';
