@@ -29,7 +29,7 @@ export function ProductImageGallery({ images, name, type = "producto" }: { image
           ))}
         </div>
       )}
-      <p className="mt-3 text-center text-xs font-normal text-slate-400">La primera imagen corresponde a la portada.</p>
+      {/* <p className="mt-3 text-center text-xs font-normal text-slate-400">La primera imagen corresponde a la portada.</p> */}
     </div>
   );
 }

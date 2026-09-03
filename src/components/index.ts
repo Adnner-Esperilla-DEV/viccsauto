@@ -17,3 +17,4 @@ export * from './imports/ImportVehicleSelector';
 export * from './imports/StyledSelect';
 export * from './imports/ImportDatePicker';
 export * from './imports/DeleteMediaButton';
+export * from './marketing/LogisticsServiceSection';
