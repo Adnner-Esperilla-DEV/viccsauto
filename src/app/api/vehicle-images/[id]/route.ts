@@ -1,13 +1,30 @@
 import { NextResponse } from "next/server";
 
 import { db } from "@/lib/db";
+import { getObject } from "@/lib/object-storage";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const image = await db.vehicleImage.findUnique({ where: { id }, select: { url: true } });
+  const image = await db.vehicleImage.findUnique({ where: { id }, select: { mimeType: true, storageKey: true, url: true } });
   if (!image) return new NextResponse(null, { status: 404 });
+
+  if (image.storageKey) {
+    try {
+      const object = await getObject(image.storageKey);
+      return new NextResponse(Buffer.from(object.body), {
+        headers: {
+          "Cache-Control": "public, max-age=31536000, immutable",
+          "Content-Length": String(object.contentLength),
+          "Content-Type": object.contentType || image.mimeType,
+          "X-Content-Type-Options": "nosniff",
+        },
+      });
+    } catch {
+      return new NextResponse(null, { status: 404 });
+    }
+  }
 
   if (!image.url.startsWith("data:")) {
     try {

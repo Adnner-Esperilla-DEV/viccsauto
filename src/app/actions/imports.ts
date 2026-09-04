@@ -8,6 +8,7 @@ import { z } from "zod";
 
 import { requireStaff } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { deleteObjectsBestEffort, uploadObject } from "@/lib/object-storage";
 import { extractImagesFromZip } from "@/lib/zip-images";
 
 const optionalText = (max: number) => z.string().trim().max(max).optional().transform((value) => value || undefined);
@@ -51,6 +52,22 @@ function importError(code: string): never {
   redirect(`/admin/imports/new?error=${encodeURIComponent(code)}`);
 }
 
+type UploadableFile = { data: Uint8Array; filename: string; mimeType: string; size?: number };
+
+async function uploadFiles(files: UploadableFile[], prefix: string) {
+  const uploaded: Array<UploadableFile & { storageKey: string }> = [];
+  try {
+    for (const file of files) {
+      const storageKey = await uploadObject({ body: file.data, contentType: file.mimeType, filename: file.filename, prefix });
+      uploaded.push({ ...file, storageKey });
+    }
+    return uploaded;
+  } catch (error) {
+    await deleteObjectsBestEffort(uploaded.map((file) => file.storageKey));
+    throw error;
+  }
+}
+
 export async function createVehicleImportAction(formData: FormData) {
   const user = await requireStaff();
   const noteResult = z.preprocess((value) => value === "" || value == null ? undefined : value, z.string().trim().max(2000).optional()).safeParse(formData.get("initialNote"));
@@ -79,17 +96,28 @@ export async function createVehicleImportAction(formData: FormData) {
   if (attachmentFiles.length > 5 || attachmentFiles.some((file) => file.size > 5 * 1024 * 1024 || !allowedAttachmentTypes.has(file.type)) || attachmentFiles.reduce((sum, file) => sum + file.size, 0) > 20 * 1024 * 1024) importError("attachments");
   const attachments = await Promise.all(attachmentFiles.map(async (file) => ({ filename: file.name.slice(0, 180), mimeType: file.type, size: file.size, data: Buffer.from(await file.arrayBuffer()) })));
 
+  let uploadedImages: Awaited<ReturnType<typeof uploadFiles>> = [];
+  let uploadedAttachments: Awaited<ReturnType<typeof uploadFiles>> = [];
+  try {
+    uploadedImages = await uploadFiles(images, "imports/images");
+    uploadedAttachments = await uploadFiles(attachments, "imports/attachments");
+  } catch {
+    await deleteObjectsBestEffort([...uploadedImages, ...uploadedAttachments].map((file) => file.storageKey));
+    importError("storage");
+  }
+
   let vehicleImport;
   try {
     const vehicleData = parsed.data;
     vehicleImport = await db.$transaction(async (tx) => {
       const row = await tx.vehicleImport.create({ data: { ...vehicleData, make: selectedVehicleModel.make.name, model: selectedVehicleModel.name, valueUsd: vehicleData.valueUsd ?? null } });
-      await tx.vehicleImportImage.createMany({ data: images.map((image, position) => ({ importId: row.id, filename: image.filename, mimeType: image.mimeType, data: Uint8Array.from(image.data), position })) });
-      if (attachments.length) await tx.vehicleImportAttachment.createMany({ data: attachments.map((attachment) => ({ importId: row.id, ...attachment })) });
+      await tx.vehicleImportImage.createMany({ data: uploadedImages.map((image, position) => ({ importId: row.id, filename: image.filename, mimeType: image.mimeType, storageKey: image.storageKey, position })) });
+      if (uploadedAttachments.length) await tx.vehicleImportAttachment.createMany({ data: uploadedAttachments.map((attachment) => ({ importId: row.id, filename: attachment.filename, mimeType: attachment.mimeType, size: attachment.size ?? attachment.data.length, storageKey: attachment.storageKey })) });
       if (initialNote) await tx.vehicleImportNote.create({ data: { importId: row.id, authorId: user.id, body: initialNote, visibleToCustomer: true } });
       return row;
     });
   } catch (error) {
+    await deleteObjectsBestEffort([...uploadedImages, ...uploadedAttachments].map((file) => file.storageKey));
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") importError("duplicate");
     throw error;
   }
@@ -164,7 +192,13 @@ export async function addVehicleImportImagesAction(formData: FormData) {
   }
   const lastImage = await db.vehicleImportImage.aggregate({ where: { importId: exists.id }, _max: { position: true } });
   const firstPosition = (lastImage._max.position ?? -1) + 1;
-  await db.vehicleImportImage.createMany({ data: images.map((image, index) => ({ importId: exists.id, filename: image.filename, mimeType: image.mimeType, data: Uint8Array.from(image.data), position: firstPosition + index })) });
+  const uploadedImages = await uploadFiles(images, "imports/images");
+  try {
+    await db.vehicleImportImage.createMany({ data: uploadedImages.map((image, index) => ({ importId: exists.id, filename: image.filename, mimeType: image.mimeType, storageKey: image.storageKey, position: firstPosition + index })) });
+  } catch (error) {
+    await deleteObjectsBestEffort(uploadedImages.map((image) => image.storageKey));
+    throw error;
+  }
   await audit(user.id, "ADD_IMAGES", exists.id, { count: images.length, zipFilename: zipFile.name });
   revalidatePath(`/admin/imports/${exists.id}`);
   revalidatePath(`/imports/${exists.id}`);
@@ -175,9 +209,10 @@ export async function deleteVehicleImportImageAction(formData: FormData) {
   const user = await requireStaff();
   const parsed = z.object({ importId: z.string().min(1), imageId: z.string().min(1) }).safeParse(Object.fromEntries(formData));
   if (!parsed.success) redirect("/admin/imports");
-  const image = await db.vehicleImportImage.findFirst({ where: { id: parsed.data.imageId, importId: parsed.data.importId }, select: { id: true, importId: true, filename: true } });
+  const image = await db.vehicleImportImage.findFirst({ where: { id: parsed.data.imageId, importId: parsed.data.importId }, select: { id: true, importId: true, filename: true, storageKey: true } });
   if (!image) redirect(`/admin/imports/${parsed.data.importId}?error=image`);
   await db.vehicleImportImage.delete({ where: { id: image.id } });
+  await deleteObjectsBestEffort([image.storageKey]);
   await audit(user.id, "DELETE_IMAGE", image.importId, { imageId: image.id, filename: image.filename });
   revalidatePath(`/admin/imports/${image.importId}`);
   revalidatePath(`/imports/${image.importId}`);
@@ -192,8 +227,14 @@ export async function addVehicleImportAttachmentsAction(formData: FormData) {
   if (!exists) redirect("/admin/imports");
   const files = formData.getAll("attachments").filter((entry): entry is File => entry instanceof File && entry.size > 0);
   if (!files.length || files.length > 5 || files.some((file) => file.size > 5 * 1024 * 1024 || !allowedAttachmentTypes.has(file.type)) || files.reduce((sum, file) => sum + file.size, 0) > 20 * 1024 * 1024) redirect(`/admin/imports/${exists.id}?error=attachments`);
-  const attachments = await Promise.all(files.map(async (file) => ({ importId: exists.id, filename: file.name.slice(0, 180), mimeType: file.type, size: file.size, data: Buffer.from(await file.arrayBuffer()) })));
-  await db.vehicleImportAttachment.createMany({ data: attachments });
+  const attachments = await Promise.all(files.map(async (file) => ({ filename: file.name.slice(0, 180), mimeType: file.type, size: file.size, data: Buffer.from(await file.arrayBuffer()) })));
+  const uploadedAttachments = await uploadFiles(attachments, "imports/attachments");
+  try {
+    await db.vehicleImportAttachment.createMany({ data: uploadedAttachments.map((attachment) => ({ importId: exists.id, filename: attachment.filename, mimeType: attachment.mimeType, size: attachment.size ?? attachment.data.length, storageKey: attachment.storageKey })) });
+  } catch (error) {
+    await deleteObjectsBestEffort(uploadedAttachments.map((file) => file.storageKey));
+    throw error;
+  }
   await audit(user.id, "ADD_ATTACHMENTS", exists.id, { count: attachments.length, filenames: attachments.map((file) => file.filename) });
   revalidatePath(`/admin/imports/${exists.id}`);
   revalidatePath(`/imports/${exists.id}`);
@@ -204,9 +245,10 @@ export async function deleteVehicleImportAttachmentAction(formData: FormData) {
   const user = await requireStaff();
   const parsed = z.object({ importId: z.string().min(1), attachmentId: z.string().min(1) }).safeParse(Object.fromEntries(formData));
   if (!parsed.success) redirect("/admin/imports");
-  const attachment = await db.vehicleImportAttachment.findFirst({ where: { id: parsed.data.attachmentId, importId: parsed.data.importId }, select: { id: true, importId: true, filename: true } });
+  const attachment = await db.vehicleImportAttachment.findFirst({ where: { id: parsed.data.attachmentId, importId: parsed.data.importId }, select: { id: true, importId: true, filename: true, storageKey: true } });
   if (!attachment) redirect(`/admin/imports/${parsed.data.importId}?error=attachment`);
   await db.vehicleImportAttachment.delete({ where: { id: attachment.id } });
+  await deleteObjectsBestEffort([attachment.storageKey]);
   await audit(user.id, "DELETE_ATTACHMENT", attachment.importId, { attachmentId: attachment.id, filename: attachment.filename });
   revalidatePath(`/admin/imports/${attachment.importId}`);
   revalidatePath(`/imports/${attachment.importId}`);

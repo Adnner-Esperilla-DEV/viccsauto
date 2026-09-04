@@ -161,6 +161,8 @@ model ProductImage {
   productId String
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
   url       String
+  storageKey String? @unique
+  mimeType   String  @default("image/webp")
   alt       String
   position  Int     @default(0)
 }
@@ -214,6 +216,8 @@ model VehicleImage {
   vehicleId String
   vehicle   Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
   url       String
+  storageKey String? @unique
+  mimeType   String  @default("image/webp")
   alt       String
   position  Int     @default(0)
 
@@ -271,7 +275,8 @@ model VehicleImportImage {
   vehicleImport VehicleImport @relation(fields: [importId], references: [id], onDelete: Cascade)
   filename    String
   mimeType    String
-  data        Bytes
+  data        Bytes?
+  storageKey  String?       @unique
   position    Int           @default(0)
 
   @@index([importId, position])
@@ -283,7 +288,8 @@ model VehicleImportAttachment {
   vehicleImport VehicleImport @relation(fields: [importId], references: [id], onDelete: Cascade)
   filename    String
   mimeType    String
-  data        Bytes
+  data        Bytes?
+  storageKey  String?       @unique
   size        Int
   createdAt   DateTime      @default(now())
 

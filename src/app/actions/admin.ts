@@ -7,6 +7,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { getSessionUser, isStaff } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { decodeDataImage, deleteObjectsBestEffort, uploadObject } from "@/lib/object-storage";
 import { canTransitionOrder } from "@/lib/order-states";
 
 async function staff() {
@@ -46,6 +47,21 @@ function parseImageReferences(rawValue: string, maxImages: number, allowExisting
     return value;
   } catch {
     return null;
+  }
+}
+
+async function uploadDataImages(values: string[], prefix: string) {
+  const uploaded: Array<{ mimeType: string; storageKey: string; url: string }> = [];
+  try {
+    for (const value of values) {
+      const image = decodeDataImage(value);
+      const storageKey = await uploadObject({ ...image, prefix });
+      uploaded.push({ mimeType: image.contentType, storageKey, url: `bucket:${storageKey}` });
+    }
+    return uploaded;
+  } catch (error) {
+    await deleteObjectsBestEffort(uploaded.map((image) => image.storageKey));
+    throw error;
   }
 }
 
@@ -117,16 +133,18 @@ export async function createProductAction(formData: FormData) {
   if (!location) redirect("/admin/products?error=location");
   const { oemCodes, brandId, imagesData: submittedImagesData, ...data } = parsed.data;
   void submittedImagesData;
+  const uploadedImages = await uploadDataImages(images, "products");
   let product;
   try {
     product = await db.$transaction(async (tx) => {
       const row = await tx.product.create({ data: { ...data, brandId: brandId ?? null, oemCodes: JSON.stringify(oemCodes.split(",").map((item) => item.trim()).filter(Boolean)), icon: "engine" } });
-      if (images.length) await tx.productImage.createMany({ data: images.map((image, position) => ({ productId: row.id, url: image, alt: `${row.name} - imagen ${position + 1}`, position })) });
+      if (uploadedImages.length) await tx.productImage.createMany({ data: uploadedImages.map((image, position) => ({ productId: row.id, ...image, alt: `${row.name} - imagen ${position + 1}`, position })) });
       await tx.inventoryItem.create({ data: { productId: row.id, locationId: location.id, quantity: data.stock } });
       if (data.stock) await tx.inventoryMovement.create({ data: { productId: row.id, locationId: location.id, type: "INITIAL", quantity: data.stock, reason: "Alta de producto" } });
       return row;
     });
   } catch (error) {
+    await deleteObjectsBestEffort(uploadedImages.map((image) => image.storageKey));
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") redirect("/admin/products?error=duplicate");
     throw error;
   }
@@ -183,7 +201,7 @@ export async function updateProductAction(formData: FormData) {
   }
   if (parsed.data.featured && !imageReferences.length) redirect(destination("error=product-featured-image"));
 
-  const current = await db.product.findUnique({ where: { id: parsed.data.id }, include: { images: { select: { id: true } } } });
+  const current = await db.product.findUnique({ where: { id: parsed.data.id }, include: { images: { select: { id: true, storageKey: true } } } });
   if (!current) redirect("/admin/products?error=invalid");
   const ownedImageIds = new Set(current.images.map((image) => image.id));
   const submittedImageIds = imageReferences.flatMap((image) => image.id ? [image.id] : []);
@@ -192,6 +210,9 @@ export async function updateProductAction(formData: FormData) {
   const { id, oemCodes, brandId, imagesData: submittedImagesData, returnTo: submittedReturnTo, ...data } = parsed.data;
   void submittedImagesData;
   void submittedReturnTo;
+  const newImageValues = imageReferences.flatMap((image) => image.data ? [image.data] : []);
+  const uploadedImages = await uploadDataImages(newImageValues, "products");
+  const removedImages = current.images.filter((image) => !submittedImageIds.includes(image.id));
   try {
     await db.$transaction(async (tx) => {
       await tx.product.update({
@@ -208,18 +229,22 @@ export async function updateProductAction(formData: FormData) {
       await tx.productImage.deleteMany({
         where: { productId: id, ...(submittedImageIds.length ? { id: { notIn: submittedImageIds } } : {}) },
       });
+      let uploadedIndex = 0;
       for (const [position, image] of imageReferences.entries()) {
         if (image.id) {
           await tx.productImage.updateMany({ where: { id: image.id, productId: id }, data: { position, alt: `${data.name} - imagen ${position + 1}` } });
         } else if (image.data) {
-          await tx.productImage.create({ data: { productId: id, url: image.data, alt: `${data.name} - imagen ${position + 1}`, position } });
+          const uploaded = uploadedImages[uploadedIndex++];
+          await tx.productImage.create({ data: { productId: id, ...uploaded, alt: `${data.name} - imagen ${position + 1}`, position } });
         }
       }
     });
   } catch (error) {
+    await deleteObjectsBestEffort(uploadedImages.map((image) => image.storageKey));
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") redirect(destination("error=product-duplicate"));
     throw error;
   }
+  await deleteObjectsBestEffort(removedImages.map((image) => image.storageKey));
 
   await audit(user.id, "UPDATE", "Product", id, { sku: data.sku, imageCount: imageReferences.length, featured: data.featured });
   revalidatePath("/admin/products");
@@ -303,6 +328,7 @@ export async function createVehicleAction(formData: FormData) {
   const images = imageReferences.flatMap((image) => image.data ? [image.data] : []);
   const { vin, color, engine, features, imagesData: submittedImagesData, ...data } = parsed.data;
   void submittedImagesData;
+  const uploadedImages = await uploadDataImages(images, "vehicles");
   let row;
   try {
     row = await db.$transaction(async (tx) => {
@@ -315,10 +341,11 @@ export async function createVehicleAction(formData: FormData) {
           features: JSON.stringify(features.split(",").map((feature) => feature.trim()).filter(Boolean)),
         },
       });
-      if (images.length) await tx.vehicleImage.createMany({ data: images.map((image, position) => ({ vehicleId: vehicle.id, url: image, alt: `${vehicle.year} ${vehicle.make} ${vehicle.model} - imagen ${position + 1}`, position })) });
+      if (uploadedImages.length) await tx.vehicleImage.createMany({ data: uploadedImages.map((image, position) => ({ vehicleId: vehicle.id, ...image, alt: `${vehicle.year} ${vehicle.make} ${vehicle.model} - imagen ${position + 1}`, position })) });
       return vehicle;
     });
   } catch (error) {
+    await deleteObjectsBestEffort(uploadedImages.map((image) => image.storageKey));
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") redirect("/admin/vehicles?error=vehicle-duplicate");
     throw error;
   }
@@ -360,13 +387,16 @@ export async function updateVehicleAction(formData: FormData) {
   if (!parsed.success) redirect(destination("error=vehicle-invalid"));
   const imageReferences = parseImageReferences(parsed.data.imagesData, 10, true);
   if (!imageReferences) redirect(destination("error=vehicle-image"));
-  const current = await db.vehicle.findUnique({ where: { id: parsed.data.id }, include: { images: { select: { id: true } } } });
+  const current = await db.vehicle.findUnique({ where: { id: parsed.data.id }, include: { images: { select: { id: true, storageKey: true } } } });
   if (!current) redirect("/admin/vehicles?error=vehicle-missing");
   const ownedImageIds = new Set(current.images.map((image) => image.id));
   const submittedImageIds = imageReferences.flatMap((image) => image.id ? [image.id] : []);
   if (submittedImageIds.some((id) => !ownedImageIds.has(id))) redirect(destination("error=vehicle-image"));
   const { id, vin, color, engine, features, imagesData: submittedImagesData, ...data } = parsed.data;
   void submittedImagesData;
+  const newImageValues = imageReferences.flatMap((image) => image.data ? [image.data] : []);
+  const uploadedImages = await uploadDataImages(newImageValues, "vehicles");
+  const removedImages = current.images.filter((image) => !submittedImageIds.includes(image.id));
   try {
     await db.$transaction(async (tx) => {
       await tx.vehicle.update({
@@ -382,19 +412,23 @@ export async function updateVehicleAction(formData: FormData) {
       await tx.vehicleImage.deleteMany({
         where: { vehicleId: id, ...(submittedImageIds.length ? { id: { notIn: submittedImageIds } } : {}) },
       });
+      let uploadedIndex = 0;
       for (const [position, image] of imageReferences.entries()) {
         const alt = `${data.year} ${data.make} ${data.model} - imagen ${position + 1}`;
         if (image.id) {
           await tx.vehicleImage.updateMany({ where: { id: image.id, vehicleId: id }, data: { position, alt } });
         } else if (image.data) {
-          await tx.vehicleImage.create({ data: { vehicleId: id, url: image.data, alt, position } });
+          const uploaded = uploadedImages[uploadedIndex++];
+          await tx.vehicleImage.create({ data: { vehicleId: id, ...uploaded, alt, position } });
         }
       }
     });
   } catch (error) {
+    await deleteObjectsBestEffort(uploadedImages.map((image) => image.storageKey));
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") redirect(destination("error=vehicle-duplicate"));
     throw error;
   }
+  await deleteObjectsBestEffort(removedImages.map((image) => image.storageKey));
   await audit(user.id, "UPDATE", "Vehicle", id, { stockNumber: data.stockNumber, status: data.status, imageCount: imageReferences.length });
   revalidatePath("/admin/vehicles");
   revalidatePath("/vehicles");

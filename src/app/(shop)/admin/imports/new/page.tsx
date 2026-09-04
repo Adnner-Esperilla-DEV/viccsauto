@@ -7,7 +7,7 @@ import { db } from "@/lib/db";
 import { importStatusSteps } from "@/lib/import-status";
 
 export const dynamic = "force-dynamic";
-const errors: Record<string, string> = { invalid: "Revisa los datos obligatorios.", customer: "Selecciona un cliente válido.", zip: "El ZIP debe contener imágenes JPG, PNG o WebP válidas y pesar como máximo 30 MB.", attachments: "Adjunta hasta 5 archivos PDF o imágenes de máximo 5 MB cada uno.", duplicate: "Ya existe una importación con ese VIN." };
+const errors: Record<string, string> = { invalid: "Revisa los datos obligatorios.", customer: "Selecciona un cliente válido.", zip: "El ZIP debe contener imágenes JPG, PNG o WebP válidas y pesar como máximo 30 MB.", attachments: "Adjunta hasta 5 archivos PDF o imágenes de máximo 5 MB cada uno.", duplicate: "Ya existe una importación con ese VIN.", storage: "No se pudieron almacenar los archivos en el bucket. Revisa su configuración e inténtalo otra vez." };
 const hazmatOptions = [{ value: "no", label: "No es HAZMAT" }, { value: "yes", label: "Sí es HAZMAT" }] as const;
 const fuelOptions = [{ value: "Gasolina", label: "Gasolina" }, { value: "Diésel", label: "Diésel" }, { value: "Híbrido", label: "Híbrido" }, { value: "Eléctrico", label: "Eléctrico" }, { value: "GLP", label: "GLP" }, { value: "GNC", label: "GNC" }, { value: "Otro", label: "Otro" }, { value: "Desconocido", label: "Desconocido" }] as const;
 const keyOptions = [{ value: "NO_KEY", label: "Sin llave" }, { value: "UNKNOWN", label: "Desconocido" }, { value: "KEY_PRESENT", label: "Llave disponible" }] as const;

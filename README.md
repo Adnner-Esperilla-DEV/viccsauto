@@ -39,6 +39,7 @@ El flujo manual crea un pago pendiente; nunca lo marca como pagado automáticame
 - `src/lib/cart.ts`: carrito anónimo o asociado a usuario.
 - `src/app/actions`: mutaciones validadas en servidor.
 - `src/lib/providers.ts`: contratos de pago, despacho y correo, con adaptadores manuales/sandbox.
+- `src/lib/object-storage.ts`: almacenamiento privado S3-compatible para imágenes y adjuntos.
 - `prisma/schema.prisma`: modelo PostgreSQL.
 - `prisma/migrations`: historial SQL versionado aplicado por Prisma Migrate.
 - `compose.yaml`: PostgreSQL 16 local con volumen persistente y health check.
@@ -51,6 +52,8 @@ ViccsAuto usa PostgreSQL. Durante desarrollo crea nuevas migraciones con `npm ru
 
 Configura `DATABASE_URL` con una conexión PostgreSQL directa para migraciones. Si el proveedor ofrece pooling, utiliza la URL recomendada por el proveedor para la aplicación y conserva una conexión directa separada para Prisma Migrate. Antes de cada despliegue crítico crea un respaldo y prueba periódicamente la restauración.
 
-Configura un almacenamiento S3-compatible o Cloudinary para imágenes y adapta `PaymentProvider`, `ShippingProvider` y `MailProvider` con credenciales exclusivamente en variables de entorno. Los webhooks reales deben validar firma, importe, moneda e idempotencia antes de cambiar un pago.
+Las imágenes y adjuntos se guardan en almacenamiento S3-compatible y PostgreSQL conserva únicamente la clave y sus metadatos. Configura `AWS_ENDPOINT_URL`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_S3_BUCKET_NAME`, `AWS_DEFAULT_REGION` y, si aplica, `AWS_S3_URL_STYLE`. Para mover registros antiguos fuera de PostgreSQL ejecuta una vez `npm run media:migrate` después de aplicar las migraciones.
+
+Adapta `PaymentProvider`, `ShippingProvider` y `MailProvider` con credenciales exclusivamente en variables de entorno. Los webhooks reales deben validar firma, importe, moneda e idempotencia antes de cambiar un pago.
 
 El endpoint `/api/health` comprueba disponibilidad de aplicación y base. Configura copias de seguridad cifradas, prueba restauraciones y monitoriza respuestas 5xx. Los encabezados CSP, anti-framing, MIME sniffing, referrer y permisos se definen en `next.config.mjs`.
