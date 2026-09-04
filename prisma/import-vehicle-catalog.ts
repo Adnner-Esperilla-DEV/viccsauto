@@ -16,6 +16,61 @@ function slugify(value: string) {
   return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "sin-nombre";
 }
 
+function normalizedName(value: string) {
+  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+}
+
+async function mergeDuplicateMakes() {
+  const makes = await prisma.vehicleMake.findMany({
+    include: { models: { select: { id: true, name: true, slug: true } } },
+    orderBy: { createdAt: "asc" },
+  });
+  const groups = new Map<string, typeof makes>();
+  for (const make of makes) {
+    const key = normalizedName(make.name);
+    groups.set(key, [...(groups.get(key) ?? []), make]);
+  }
+
+  for (const group of groups.values()) {
+    if (group.length < 2) continue;
+    const target = group.find((make) => make.sourceId != null) ?? group[0];
+    const displayName = group.find((make) => make.name !== make.name.toUpperCase())?.name ?? target.name;
+
+    await prisma.$transaction(async (tx) => {
+      for (const duplicate of group) {
+        if (duplicate.id === target.id) continue;
+
+        for (const model of duplicate.models) {
+          const existing = await tx.vehicleModel.findFirst({
+            where: { makeId: target.id, name: { equals: model.name, mode: "insensitive" } },
+            select: { id: true },
+          });
+          if (existing) {
+            await tx.productCompatibility.updateMany({ where: { vehicleModelId: model.id }, data: { vehicleModelId: existing.id, make: displayName } });
+            await tx.vehicleImport.updateMany({ where: { modelId: model.id }, data: { modelId: existing.id, makeId: target.id, make: displayName } });
+            await tx.vehicleModel.delete({ where: { id: model.id } });
+          } else {
+            const slugConflict = await tx.vehicleModel.findFirst({ where: { makeId: target.id, slug: model.slug }, select: { id: true } });
+            await tx.vehicleModel.update({
+              where: { id: model.id },
+              data: { makeId: target.id, slug: slugConflict ? `${model.slug}-${model.id.slice(-6)}` : model.slug },
+            });
+          }
+        }
+
+        await tx.vehicleImport.updateMany({ where: { makeId: duplicate.id }, data: { makeId: target.id, make: displayName } });
+        await tx.vehicleMake.delete({ where: { id: duplicate.id } });
+      }
+
+      if (target.name !== displayName) {
+        await tx.vehicleMake.update({ where: { id: target.id }, data: { name: displayName } });
+        await tx.productCompatibility.updateMany({ where: { vehicleModel: { makeId: target.id } }, data: { make: displayName } });
+        await tx.vehicleImport.updateMany({ where: { makeId: target.id }, data: { make: displayName } });
+      }
+    });
+  }
+}
+
 async function main() {
   const response = await fetch(VPIC_URL, { headers: { Accept: "application/json", "User-Agent": "ViccsAuto vehicle catalog importer" } });
   if (!response.ok) throw new Error(`vPIC respondió ${response.status}`);
@@ -43,6 +98,8 @@ async function main() {
   for (let index = 0; index < modelRows.length; index += 1_000) {
     await prisma.vehicleModel.createMany({ data: modelRows.slice(index, index + 1_000), skipDuplicates: true });
   }
+
+  await mergeDuplicateMakes();
 
   const currentYear = new Date().getFullYear();
   await prisma.vehicleYear.createMany({ data: Array.from({ length: currentYear + 2 - 1950 + 1 }, (_, index) => ({ year: 1950 + index })), skipDuplicates: true });
