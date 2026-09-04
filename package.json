@@ -17,6 +17,7 @@
     "db:seed": "prisma db seed",
     "media:migrate": "tsx prisma/migrate-media-to-bucket.ts",
     "db:vehicles:import": "tsx prisma/import-vehicle-catalog.ts",
+    "db:vehicles:reset": "tsx prisma/import-vehicle-catalog.ts --reset",
     "db:studio": "prisma studio",
     "db:up": "docker compose up -d db",
     "db:down": "docker compose down"
