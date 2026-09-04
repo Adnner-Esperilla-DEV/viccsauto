@@ -2,6 +2,8 @@ import type { MetadataRoute } from "next";
 import { siteConfig } from "@/config/site";
 import { db } from "@/lib/db";
 
+export const dynamic = "force-dynamic";
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [categories, products, vehicles] = await Promise.all([db.category.findMany({ where: { isActive: true }, select: { slug: true, updatedAt: true } }), db.product.findMany({ where: { isActive: true }, select: { slug: true, updatedAt: true } }), db.vehicle.findMany({ where: { status: "AVAILABLE" }, select: { slug: true, updatedAt: true } })]);
   const now = new Date();
