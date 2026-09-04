@@ -1,6 +1,6 @@
 import "server-only";
 
-type ZipEntry = { filename: string; data: Buffer };
+type ZipEntry = { filename: string; data: Uint8Array };
 
 const crcTable = Array.from({ length: 256 }, (_, index) => {
   let value = index;
@@ -45,8 +45,9 @@ export function createZip(entries: ZipEntry[]) {
   let offset = 0;
 
   for (const entry of uniqueFilenames(entries)) {
+    const data = Buffer.from(entry.data);
     const name = Buffer.from(entry.filename, "utf8");
-    const crc = crc32(entry.data);
+    const crc = crc32(data);
     const local = Buffer.alloc(30);
     local.writeUInt32LE(0x04034b50, 0);
     local.writeUInt16LE(20, 4);
@@ -55,8 +56,8 @@ export function createZip(entries: ZipEntry[]) {
     local.writeUInt16LE(now.time, 10);
     local.writeUInt16LE(now.date, 12);
     local.writeUInt32LE(crc, 14);
-    local.writeUInt32LE(entry.data.length, 18);
-    local.writeUInt32LE(entry.data.length, 22);
+    local.writeUInt32LE(data.length, 18);
+    local.writeUInt32LE(data.length, 22);
     local.writeUInt16LE(name.length, 26);
 
     const central = Buffer.alloc(46);
@@ -68,14 +69,14 @@ export function createZip(entries: ZipEntry[]) {
     central.writeUInt16LE(now.time, 12);
     central.writeUInt16LE(now.date, 14);
     central.writeUInt32LE(crc, 16);
-    central.writeUInt32LE(entry.data.length, 20);
-    central.writeUInt32LE(entry.data.length, 24);
+    central.writeUInt32LE(data.length, 20);
+    central.writeUInt32LE(data.length, 24);
     central.writeUInt16LE(name.length, 28);
     central.writeUInt32LE(offset, 42);
 
-    localParts.push(local, name, entry.data);
+    localParts.push(local, name, data);
     centralParts.push(central, name);
-    offset += local.length + name.length + entry.data.length;
+    offset += local.length + name.length + data.length;
   }
 
   const centralDirectory = Buffer.concat(centralParts);

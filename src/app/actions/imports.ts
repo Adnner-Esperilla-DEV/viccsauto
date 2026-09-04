@@ -84,7 +84,7 @@ export async function createVehicleImportAction(formData: FormData) {
     const vehicleData = parsed.data;
     vehicleImport = await db.$transaction(async (tx) => {
       const row = await tx.vehicleImport.create({ data: { ...vehicleData, make: selectedVehicleModel.make.name, model: selectedVehicleModel.name, valueUsd: vehicleData.valueUsd ?? null } });
-      await tx.vehicleImportImage.createMany({ data: images.map((image, position) => ({ importId: row.id, filename: image.filename, mimeType: image.mimeType, data: image.data, position })) });
+      await tx.vehicleImportImage.createMany({ data: images.map((image, position) => ({ importId: row.id, filename: image.filename, mimeType: image.mimeType, data: Uint8Array.from(image.data), position })) });
       if (attachments.length) await tx.vehicleImportAttachment.createMany({ data: attachments.map((attachment) => ({ importId: row.id, ...attachment })) });
       if (initialNote) await tx.vehicleImportNote.create({ data: { importId: row.id, authorId: user.id, body: initialNote, visibleToCustomer: true } });
       return row;
@@ -164,7 +164,7 @@ export async function addVehicleImportImagesAction(formData: FormData) {
   }
   const lastImage = await db.vehicleImportImage.aggregate({ where: { importId: exists.id }, _max: { position: true } });
   const firstPosition = (lastImage._max.position ?? -1) + 1;
-  await db.vehicleImportImage.createMany({ data: images.map((image, index) => ({ importId: exists.id, filename: image.filename, mimeType: image.mimeType, data: image.data, position: firstPosition + index })) });
+  await db.vehicleImportImage.createMany({ data: images.map((image, index) => ({ importId: exists.id, filename: image.filename, mimeType: image.mimeType, data: Uint8Array.from(image.data), position: firstPosition + index })) });
   await audit(user.id, "ADD_IMAGES", exists.id, { count: images.length, zipFilename: zipFile.name });
   revalidatePath(`/admin/imports/${exists.id}`);
   revalidatePath(`/imports/${exists.id}`);
