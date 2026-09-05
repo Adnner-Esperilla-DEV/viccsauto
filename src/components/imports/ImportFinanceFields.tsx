@@ -44,7 +44,7 @@ export function ImportFinanceFields({
           </div>
           <span className="rounded-full bg-blue-700 px-4 py-2 text-xs font-black tracking-wide text-white">TODO EN USD</span>
         </div>
-        <p className="mt-2 text-sm text-slate-600">Todos los importes se registran en dólares estadounidenses.</p>
+        <p className="mt-2 text-sm text-slate-600">Todos los importes se registran en dólares estadounidenses. El valor del vehículo es informativo y no se suma al total a cancelar.</p>
       </div>
 
       <div className="grid gap-4 p-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -63,7 +63,7 @@ export function ImportFinanceFields({
       </div>
 
       <div className="grid gap-3 border-t border-blue-100 bg-white/70 px-6 py-5 sm:grid-cols-3">
-        <FinanceCard label="Total" value={summary.totalUsd} tone="blue" />
+        <FinanceCard label="Total de servicios" value={summary.totalUsd} tone="blue" />
         <FinanceCard label="Cancelado" value={summary.paidAmountUsd} tone="green" />
         <FinanceCard label="Saldo pendiente" value={summary.balanceUsd} tone={summary.balanceUsd > 0 ? "amber" : "green"} />
       </div>

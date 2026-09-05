@@ -49,7 +49,7 @@ const vehicleImportDataSchema = z.object({
   exportReference: optionalText(160),
   status: importStatusSchema,
 }).superRefine((value, context) => {
-  const totalCents = Math.round(((value.valueUsd ?? 0) + value.towingCostUsd + value.oceanFreightUsd) * 100);
+  const totalCents = Math.round((value.towingCostUsd + value.oceanFreightUsd) * 100);
   const paidCents = Math.round(value.paidAmountUsd * 100);
   if (paidCents > totalCents) {
     context.addIssue({ code: "custom", path: ["paidAmountUsd"], message: "El monto cancelado no puede superar el total de la importación." });

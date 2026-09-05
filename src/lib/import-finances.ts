@@ -12,7 +12,7 @@ export function getImportFinanceSummary(values: ImportFinanceValues) {
   const towingCostUsd = Math.max(0, values.towingCostUsd);
   const oceanFreightUsd = Math.max(0, values.oceanFreightUsd);
   const paidAmountUsd = Math.max(0, values.paidAmountUsd);
-  const totalUsd = vehicleValueUsd + towingCostUsd + oceanFreightUsd;
+  const totalUsd = towingCostUsd + oceanFreightUsd;
   const balanceUsd = Math.max(0, totalUsd - paidAmountUsd);
   const paymentStatus = totalUsd === 0
     ? "UNPRICED"
