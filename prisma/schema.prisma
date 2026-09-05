@@ -258,6 +258,11 @@ model VehicleImport {
   consignee         String?
   notifyParty       String?
   exportReference   String?
+  containerNumber   String?
+  shippingLine      String?
+  departureDate     DateTime?
+  arrivalDate       DateTime?
+  arrivalPlace      String?                   @default("Iquique, Chile")
   status            String                    @default("INCOMING")
   images            VehicleImportImage[]
   attachments       VehicleImportAttachment[]

@@ -47,12 +47,20 @@ const vehicleImportDataSchema = z.object({
   consignee: optionalText(160),
   notifyParty: optionalText(160),
   exportReference: optionalText(160),
+  containerNumber: optionalText(80),
+  shippingLine: optionalText(120),
+  departureDate: z.preprocess((value) => value === "" || value == null ? undefined : value, z.coerce.date().optional()),
+  arrivalDate: z.preprocess((value) => value === "" || value == null ? undefined : value, z.coerce.date().optional()),
+  arrivalPlace: optionalText(160),
   status: importStatusSchema,
 }).superRefine((value, context) => {
   const totalCents = Math.round((value.towingCostUsd + value.oceanFreightUsd) * 100);
   const paidCents = Math.round(value.paidAmountUsd * 100);
   if (paidCents > totalCents) {
     context.addIssue({ code: "custom", path: ["paidAmountUsd"], message: "El monto cancelado no puede superar el total de la importación." });
+  }
+  if (value.departureDate && value.arrivalDate && value.arrivalDate < value.departureDate) {
+    context.addIssue({ code: "custom", path: ["arrivalDate"], message: "La fecha de llegada no puede ser anterior a la fecha de embarque." });
   }
 });
 
@@ -174,11 +182,11 @@ export async function updateVehicleImportAction(formData: FormData) {
       titleNumber: fields.titleNumber ?? null,
       titleState: fields.titleState ?? null,
       scheduleB: fields.scheduleB ?? null,
-      customerParty: fields.customerParty ?? null,
-      shipper: fields.shipper ?? null,
-      consignee: fields.consignee ?? null,
-      notifyParty: fields.notifyParty ?? null,
-      exportReference: fields.exportReference ?? null,
+      containerNumber: fields.containerNumber ?? null,
+      shippingLine: fields.shippingLine ?? null,
+      departureDate: fields.departureDate ?? null,
+      arrivalDate: fields.arrivalDate ?? null,
+      arrivalPlace: fields.arrivalPlace ?? null,
     } });
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") redirect(`/admin/imports/${id}/edit?error=duplicate`);
