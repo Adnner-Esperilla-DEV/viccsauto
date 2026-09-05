@@ -4,6 +4,7 @@ export const importStatusSteps = [
   { value: "ASSIGNED", label: "Asignado" },
   { value: "LOADED", label: "Cargado" },
   { value: "SHIPPED", label: "Embarcado" },
+  { value: "FINALIZED", label: "Finalizado" },
 ] as const;
 
 export type ImportStatus = (typeof importStatusSteps)[number]["value"];

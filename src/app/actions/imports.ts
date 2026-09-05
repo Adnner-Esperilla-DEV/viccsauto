@@ -17,7 +17,7 @@ const usdAmount = z.preprocess(
   (value) => value === "" || value == null ? 0 : value,
   z.coerce.number().finite().nonnegative().max(9_999_999_999.99),
 );
-const importStatusSchema = z.enum(["INCOMING", "RECEIVED", "ASSIGNED", "LOADED", "SHIPPED"]);
+const importStatusSchema = z.enum(["INCOMING", "RECEIVED", "ASSIGNED", "LOADED", "SHIPPED", "FINALIZED"]);
 const allowedAttachmentTypes = new Set(["application/pdf", "image/jpeg", "image/png", "image/webp"]);
 const vehicleImportDataSchema = z.object({
   customerId: z.string().min(1),
