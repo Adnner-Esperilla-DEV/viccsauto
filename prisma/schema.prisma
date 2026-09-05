@@ -240,6 +240,9 @@ model VehicleImport {
   lotNumber         String?
   weightKg          Int?
   valueUsd          Decimal?                  @db.Decimal(12, 2)
+  towingCostUsd     Decimal                   @default(0) @db.Decimal(12, 2)
+  oceanFreightUsd   Decimal                   @default(0) @db.Decimal(12, 2)
+  paidAmountUsd     Decimal                   @default(0) @db.Decimal(12, 2)
   loadType          String?
   destinationPort   String?
   receivedDate      DateTime?

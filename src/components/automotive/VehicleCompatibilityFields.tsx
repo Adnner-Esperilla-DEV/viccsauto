@@ -1,183 +1,225 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { IoCheckmarkOutline, IoSearchOutline } from "react-icons/io5";
 
-type MakeOption = { id: string; name: string };
-type ModelOption = { id: string; name: string };
+type Option = { id: string; name: string };
 
-function sameText(left: string, right: string) {
-  return left.trim().localeCompare(right.trim(), "es", { sensitivity: "base" }) === 0;
-}
-
-function searchText(value: string) {
+function normalized(value: string) {
   return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
 }
 
-function matchingOptions<T extends { name: string }>(options: T[], query: string) {
-  const term = searchText(query);
+function matches(options: Option[], query: string) {
+  const term = normalized(query);
   if (!term) return [];
+
   return options
-    .filter((option) => searchText(option.name).includes(term))
-    .sort((left, right) => {
-      const leftStarts = searchText(left.name).startsWith(term);
-      const rightStarts = searchText(right.name).startsWith(term);
-      return Number(rightStarts) - Number(leftStarts) || left.name.localeCompare(right.name, "es");
-    })
-    .slice(0, 8);
+    .filter((option) => normalized(option.name).includes(term))
+    .sort((left, right) => (
+      Number(normalized(right.name).startsWith(term)) - Number(normalized(left.name).startsWith(term))
+      || left.name.localeCompare(right.name, "es")
+    ))
+    .slice(0, 5);
 }
 
-export function VehicleCompatibilityFields({ makes }: { makes: MakeOption[] }) {
-  const [makeName, setMakeName] = useState("");
-  const [modelName, setModelName] = useState("");
-  const [models, setModels] = useState<ModelOption[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [loadError, setLoadError] = useState(false);
+export function VehicleCompatibilityFields({ makes }: { makes: Option[] }) {
+  const makeInput = useRef<HTMLInputElement>(null);
+  const modelInput = useRef<HTMLInputElement>(null);
+  const [makeQuery, setMakeQuery] = useState("");
+  const [modelQuery, setModelQuery] = useState("");
+  const [selectedMake, setSelectedMake] = useState<Option | null>(null);
+  const [selectedModel, setSelectedModel] = useState<Option | null>(null);
+  const [models, setModels] = useState<Option[]>([]);
   const [makeOpen, setMakeOpen] = useState(false);
   const [modelOpen, setModelOpen] = useState(false);
-
-  const selectedMake = useMemo(
-    () => makes.find((make) => sameText(make.name, makeName)),
-    [makeName, makes],
-  );
-  const selectedModel = useMemo(
-    () => models.find((model) => sameText(model.name, modelName)),
-    [modelName, models],
-  );
-  const matchingMakes = useMemo(() => matchingOptions(makes, makeName), [makeName, makes]);
-  const matchingModels = useMemo(() => matchingOptions(models, modelName), [modelName, models]);
-
-  function changeMake(nextName: string) {
-    const nextMake = makes.find((make) => sameText(make.name, nextName));
-    setMakeName(nextName);
-    setModelName("");
-    setModels([]);
-    setLoadError(false);
-    setLoading(Boolean(nextMake));
-    setModelOpen(false);
-  }
+  const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState(false);
+  const matchingMakes = useMemo(() => matches(makes, makeQuery), [makes, makeQuery]);
+  const matchingModels = useMemo(() => matches(models, modelQuery), [models, modelQuery]);
 
   useEffect(() => {
     if (!selectedMake) return;
 
     const controller = new AbortController();
-    let active = true;
-    const timeoutId = window.setTimeout(() => {
-      if (!active) return;
-      setLoadError(true);
-      setLoading(false);
-      controller.abort();
-    }, 8_000);
+    setLoading(true);
+    setLoadError(false);
 
     fetch(`/api/vehicle-models?makeId=${encodeURIComponent(selectedMake.id)}`, {
-      signal: controller.signal,
       cache: "no-store",
+      signal: controller.signal,
     })
       .then((response) => {
         if (!response.ok) throw new Error("No se pudieron cargar los modelos");
-        return response.json() as Promise<ModelOption[]>;
+        return response.json() as Promise<Option[]>;
       })
-      .then((loadedModels) => {
-        if (active) setModels(loadedModels);
-      })
+      .then(setModels)
       .catch((error: unknown) => {
-        if (active && !(error instanceof DOMException && error.name === "AbortError")) setLoadError(true);
+        if (!(error instanceof DOMException && error.name === "AbortError")) setLoadError(true);
       })
       .finally(() => {
-        window.clearTimeout(timeoutId);
-        if (active) setLoading(false);
+        if (!controller.signal.aborted) setLoading(false);
       });
 
-    return () => {
-      active = false;
-      window.clearTimeout(timeoutId);
-      controller.abort();
-    };
+    return () => controller.abort();
   }, [selectedMake]);
+
+  function chooseMake(make: Option) {
+    setSelectedMake(make);
+    setMakeQuery(make.name);
+    setSelectedModel(null);
+    setModelQuery("");
+    setModels([]);
+    setMakeOpen(false);
+    makeInput.current?.setCustomValidity("");
+  }
+
+  function chooseModel(model: Option) {
+    setSelectedModel(model);
+    setModelQuery(model.name);
+    setModelOpen(false);
+    modelInput.current?.setCustomValidity("");
+  }
+
+  const inputClass = "w-full rounded-xl border border-slate-300 bg-white py-3 pl-11 pr-4 font-normal outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-100";
 
   return (
     <div className="grid gap-4 md:col-span-2 md:grid-cols-2">
-      <div className="grid content-start gap-1 text-sm font-bold">
-        <label htmlFor="vehicle-make">Marca</label>
-        <div className="relative">
+      <input type="hidden" name="vehicleModelId" value={selectedModel?.id ?? ""} />
+
+      <div className="relative">
+        <label htmlFor="vehicle-make" className="text-sm font-bold text-slate-700">Marca</label>
+        <div className="relative mt-2">
+          <IoSearchOutline className="pointer-events-none absolute left-4 top-4 h-5 w-5 text-slate-400" aria-hidden="true" />
           <input
+            ref={makeInput}
             id="vehicle-make"
             required
-            value={makeName}
-            onChange={(event) => { changeMake(event.target.value); setMakeOpen(true); }}
+            value={makeQuery}
+            autoComplete="off"
+            role="combobox"
+            aria-autocomplete="list"
+            aria-expanded={makeOpen && Boolean(makeQuery.trim())}
+            aria-controls="vehicle-make-list"
+            placeholder="Escribe, por ejemplo: Ford"
+            className={inputClass}
             onFocus={() => setMakeOpen(true)}
             onBlur={() => setMakeOpen(false)}
-            placeholder="Escribe, ej. Ford"
-            autoComplete="off"
-            role="combobox"
-            aria-autocomplete="list"
-            aria-expanded={makeOpen && Boolean(makeName.trim())}
-            aria-controls="vehicle-make-options"
-            className="w-full rounded-xl border p-3 font-normal outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+            onKeyDown={(event) => {
+              if (event.key === "Enter" && makeOpen && matchingMakes[0]) {
+                event.preventDefault();
+                chooseMake(matchingMakes[0]);
+              }
+              if (event.key === "Escape") {
+                event.stopPropagation();
+                setMakeOpen(false);
+              }
+            }}
+            onChange={(event) => {
+              event.currentTarget.setCustomValidity("Selecciona una marca de la lista.");
+              setMakeQuery(event.target.value);
+              setSelectedMake(null);
+              setSelectedModel(null);
+              setModelQuery("");
+              setModels([]);
+              setMakeOpen(true);
+            }}
           />
-          {makeOpen && makeName.trim() && (
-            <div id="vehicle-make-options" role="listbox" className="absolute inset-x-0 top-full z-30 mt-1 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-xl">
-              {matchingMakes.length ? matchingMakes.map((make) => (
-                <button
-                  key={make.id}
-                  type="button"
-                  role="option"
-                  aria-selected={selectedMake?.id === make.id}
-                  onMouseDown={(event) => event.preventDefault()}
-                  onClick={() => { changeMake(make.name); setMakeOpen(false); }}
-                  className="block w-full px-4 py-2.5 text-left font-normal hover:bg-blue-50 hover:text-blue-800"
-                >
-                  {make.name}
-                </button>
-              )) : <p className="px-4 py-3 font-normal text-slate-500">No hay marcas coincidentes.</p>}
-            </div>
-          )}
         </div>
-        {makeName && !selectedMake && <small className="font-normal text-amber-700">Selecciona una marca de las sugerencias.</small>}
+        {makeOpen && makeQuery.trim() && (
+          <Options
+            id="vehicle-make-list"
+            options={matchingMakes}
+            selectedId={selectedMake?.id}
+            empty="No encontramos esa marca."
+            choose={chooseMake}
+          />
+        )}
+        {!selectedMake && makeQuery && (
+          <p className="mt-1 text-xs font-normal text-amber-700">Selecciona una marca de las sugerencias.</p>
+        )}
       </div>
 
-      <div className="grid content-start gap-1 text-sm font-bold">
-        <label htmlFor="vehicle-model">Modelo</label>
-        <div className="relative">
+      <div className="relative">
+        <label htmlFor="vehicle-model" className="text-sm font-bold text-slate-700">Modelo</label>
+        <div className="relative mt-2">
+          <IoSearchOutline className="pointer-events-none absolute left-4 top-4 h-5 w-5 text-slate-400" aria-hidden="true" />
           <input
+            ref={modelInput}
             id="vehicle-model"
             required
-            value={modelName}
-            onChange={(event) => { setModelName(event.target.value); setModelOpen(true); }}
-            onFocus={() => setModelOpen(true)}
-            onBlur={() => setModelOpen(false)}
-            placeholder={selectedMake ? "Escribe, ej. Escape" : "Primero selecciona una marca"}
-            autoComplete="off"
             disabled={!selectedMake || loading || loadError}
+            value={modelQuery}
+            autoComplete="off"
             role="combobox"
             aria-autocomplete="list"
-            aria-expanded={modelOpen && Boolean(modelName.trim())}
-            aria-controls="vehicle-model-options"
-            className="w-full rounded-xl border p-3 font-normal outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-100"
+            aria-expanded={modelOpen && Boolean(modelQuery.trim())}
+            aria-controls="vehicle-model-list"
+            placeholder={loading ? "Cargando modelos…" : selectedMake ? `Buscar modelo de ${selectedMake.name}` : "Primero selecciona la marca"}
+            className={inputClass}
+            onFocus={() => setModelOpen(true)}
+            onBlur={() => setModelOpen(false)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" && modelOpen && matchingModels[0]) {
+                event.preventDefault();
+                chooseModel(matchingModels[0]);
+              }
+              if (event.key === "Escape") {
+                event.stopPropagation();
+                setModelOpen(false);
+              }
+            }}
+            onChange={(event) => {
+              event.currentTarget.setCustomValidity("Selecciona un modelo de la lista.");
+              setModelQuery(event.target.value);
+              setSelectedModel(null);
+              setModelOpen(true);
+            }}
           />
-          {modelOpen && modelName.trim() && selectedMake && !loading && (
-            <div id="vehicle-model-options" role="listbox" className="absolute inset-x-0 top-full z-30 mt-1 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-xl">
-              {matchingModels.length ? matchingModels.map((model) => (
-                <button
-                  key={model.id}
-                  type="button"
-                  role="option"
-                  aria-selected={selectedModel?.id === model.id}
-                  onMouseDown={(event) => event.preventDefault()}
-                  onClick={() => { setModelName(model.name); setModelOpen(false); }}
-                  className="block w-full px-4 py-2.5 text-left font-normal hover:bg-blue-50 hover:text-blue-800"
-                >
-                  {model.name}
-                </button>
-              )) : <p className="px-4 py-3 font-normal text-slate-500">No hay modelos coincidentes.</p>}
-            </div>
-          )}
         </div>
-        {loading && <small className="font-normal text-blue-700">Cargando modelos…</small>}
-        {loadError && <small className="font-normal text-red-700">No se pudieron cargar los modelos. Vuelve a elegir la marca.</small>}
-        {!loading && selectedMake && modelName && !selectedModel && <small className="font-normal text-amber-700">Selecciona un modelo de las sugerencias.</small>}
+        {modelOpen && modelQuery.trim() && selectedMake && !loading && !loadError && (
+          <Options
+            id="vehicle-model-list"
+            options={matchingModels}
+            selectedId={selectedModel?.id}
+            empty={`No encontramos ese modelo para ${selectedMake.name}.`}
+            choose={chooseModel}
+          />
+        )}
+        {loadError && (
+          <p className="mt-1 text-xs font-normal text-red-700">No se pudieron cargar los modelos. Vuelve a seleccionar la marca.</p>
+        )}
+        {!selectedModel && modelQuery && !loading && (
+          <p className="mt-1 text-xs font-normal text-amber-700">Selecciona un modelo de las sugerencias.</p>
+        )}
       </div>
+    </div>
+  );
+}
 
-      <input type="hidden" name="vehicleModelId" value={selectedModel?.id ?? ""}/>
+function Options({ id, options, selectedId, empty, choose }: {
+  id: string;
+  options: Option[];
+  selectedId?: string;
+  empty: string;
+  choose: (option: Option) => void;
+}) {
+  return (
+    <div id={id} role="listbox" className="absolute inset-x-0 top-full z-30 mt-2 overflow-hidden rounded-2xl border border-slate-200 bg-white p-2 shadow-xl">
+      {options.map((option) => (
+        <button
+          key={option.id}
+          type="button"
+          role="option"
+          aria-selected={option.id === selectedId}
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => choose(option)}
+          className="flex w-full items-center justify-between rounded-xl px-4 py-3 text-left font-semibold hover:bg-blue-50 hover:text-blue-800"
+        >
+          <span>{option.name}</span>
+          {option.id === selectedId && <IoCheckmarkOutline aria-hidden="true" />}
+        </button>
+      ))}
+      {!options.length && <p className="px-4 py-4 text-sm text-slate-500">{empty}</p>}
     </div>
   );
 }

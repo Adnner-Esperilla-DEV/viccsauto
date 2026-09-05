@@ -13,6 +13,10 @@ import { extractImagesFromZip } from "@/lib/zip-images";
 
 const optionalText = (max: number) => z.string().trim().max(max).optional().transform((value) => value || undefined);
 const optionalNumber = z.preprocess((value) => value === "" || value == null ? undefined : value, z.coerce.number().nonnegative().optional());
+const usdAmount = z.preprocess(
+  (value) => value === "" || value == null ? 0 : value,
+  z.coerce.number().finite().nonnegative().max(9_999_999_999.99),
+);
 const importStatusSchema = z.enum(["INCOMING", "RECEIVED", "ASSIGNED", "LOADED", "SHIPPED"]);
 const allowedAttachmentTypes = new Set(["application/pdf", "image/jpeg", "image/png", "image/webp"]);
 const vehicleImportDataSchema = z.object({
@@ -25,6 +29,9 @@ const vehicleImportDataSchema = z.object({
   lotNumber: optionalText(60),
   weightKg: z.preprocess((value) => value === "" || value == null ? undefined : value, z.coerce.number().int().positive().max(100_000).optional()),
   valueUsd: optionalNumber,
+  towingCostUsd: usdAmount,
+  oceanFreightUsd: usdAmount,
+  paidAmountUsd: usdAmount,
   loadType: optionalText(30),
   destinationPort: optionalText(160),
   receivedDate: z.preprocess((value) => value === "" || value == null ? undefined : value, z.coerce.date().optional()),
@@ -41,6 +48,12 @@ const vehicleImportDataSchema = z.object({
   notifyParty: optionalText(160),
   exportReference: optionalText(160),
   status: importStatusSchema,
+}).superRefine((value, context) => {
+  const totalCents = Math.round(((value.valueUsd ?? 0) + value.towingCostUsd + value.oceanFreightUsd) * 100);
+  const paidCents = Math.round(value.paidAmountUsd * 100);
+  if (paidCents > totalCents) {
+    context.addIssue({ code: "custom", path: ["paidAmountUsd"], message: "El monto cancelado no puede superar el total de la importación." });
+  }
 });
 
 async function audit(userId: string, action: string, entityId: string, details?: unknown) {
@@ -74,7 +87,7 @@ export async function createVehicleImportAction(formData: FormData) {
   if (!noteResult.success) importError("invalid");
   const initialNote = noteResult.data;
   const parsed = vehicleImportDataSchema.safeParse(Object.fromEntries(formData));
-  if (!parsed.success) importError("invalid");
+  if (!parsed.success) importError(parsed.error.issues.some((issue) => issue.path[0] === "paidAmountUsd") ? "payment" : "invalid");
 
   const [customer, selectedVehicleModel] = await Promise.all([
     db.user.findFirst({ where: { id: parsed.data.customerId, role: "CUSTOMER", status: { in: ["ACTIVE", "POS_ONLY"] } }, select: { id: true } }),
@@ -122,7 +135,7 @@ export async function createVehicleImportAction(formData: FormData) {
     throw error;
   }
 
-  await audit(user.id, "CREATE", vehicleImport.id, { vin: vehicleImport.vin, customerId: customer.id, imageCount: images.length, attachmentCount: attachments.length, initialCustomerNote: Boolean(initialNote) });
+  await audit(user.id, "CREATE", vehicleImport.id, { vin: vehicleImport.vin, customerId: customer.id, towingCostUsd: vehicleImport.towingCostUsd, oceanFreightUsd: vehicleImport.oceanFreightUsd, paidAmountUsd: vehicleImport.paidAmountUsd, imageCount: images.length, attachmentCount: attachments.length, initialCustomerNote: Boolean(initialNote) });
   revalidatePath("/admin/imports");
   revalidatePath("/imports");
   redirect(`/admin/imports/${vehicleImport.id}?ok=created`);
@@ -130,9 +143,12 @@ export async function createVehicleImportAction(formData: FormData) {
 
 export async function updateVehicleImportAction(formData: FormData) {
   const user = await requireStaff();
-  const parsed = vehicleImportDataSchema.extend({ id: z.string().min(1) }).safeParse(Object.fromEntries(formData));
+  const parsed = vehicleImportDataSchema.safeExtend({ id: z.string().min(1) }).safeParse(Object.fromEntries(formData));
   const fallbackId = encodeURIComponent(String(formData.get("id") ?? ""));
-  if (!parsed.success) redirect(`/admin/imports/${fallbackId}/edit?error=invalid`);
+  if (!parsed.success) {
+    const errorCode = parsed.error.issues.some((issue) => issue.path[0] === "paidAmountUsd") ? "payment" : "invalid";
+    redirect(`/admin/imports/${fallbackId}/edit?error=${errorCode}`);
+  }
   const data = parsed.data;
   const [existing, customer, selectedVehicleModel] = await Promise.all([
     db.vehicleImport.findUnique({ where: { id: data.id }, select: { id: true, customerId: true } }),
@@ -168,7 +184,7 @@ export async function updateVehicleImportAction(formData: FormData) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") redirect(`/admin/imports/${id}/edit?error=duplicate`);
     throw error;
   }
-  await audit(user.id, "UPDATE", id, { previousCustomerId: existing.customerId, customerId: customer.id, makeId: fields.makeId, modelId: fields.modelId });
+  await audit(user.id, "UPDATE", id, { previousCustomerId: existing.customerId, customerId: customer.id, makeId: fields.makeId, modelId: fields.modelId, towingCostUsd: fields.towingCostUsd, oceanFreightUsd: fields.oceanFreightUsd, paidAmountUsd: fields.paidAmountUsd });
   revalidatePath("/admin/imports");
   revalidatePath(`/admin/imports/${id}`);
   revalidatePath("/imports");
