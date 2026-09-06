@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import { formatUsd, getImportFinanceSummary } from "@/lib/import-finances";
 import { ImportFinanceFields } from "./ImportFinanceFields";
@@ -130,13 +130,6 @@ export function ImportTypeFields({ makes, initialType = "VEHICLE", initialVehicl
 }
 
 function PartFields({ part, index, makes, update, remove }: { part: ImportedPartDraft; index: number; makes: Option[]; update: (changes: Partial<ImportedPartDraft>) => void; remove?: () => void }) {
-  const [models, setModels] = useState<Option[]>(part.modelId ? [{ id: part.modelId, name: part.modelName }] : []);
-  useEffect(() => {
-    if (!part.makeId) return;
-    const controller = new AbortController();
-    fetch(`/api/vehicle-models?makeId=${encodeURIComponent(part.makeId)}`, { cache: "no-store", signal: controller.signal }).then((response) => response.ok ? response.json() as Promise<Option[]> : Promise.reject()).then(setModels).catch(() => { if (!controller.signal.aborted) setModels([]); });
-    return () => controller.abort();
-  }, [part.makeId]);
   return <fieldset className="rounded-2xl border border-slate-200 p-5"><div className="flex items-center justify-between"><legend className="font-black text-blue-800">Repuesto {index + 1}</legend>{remove && <button type="button" onClick={remove} className="text-sm font-bold text-red-700">Eliminar</button>}</div><div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
     <label className={label}>Descripción<input required maxLength={160} value={part.description} onChange={(event) => update({ description: event.target.value })} placeholder="Ej. Bomba de agua" className={field}/></label>
     <label className={label}>Número de parte / OEM<input required maxLength={80} value={part.partNumber} onChange={(event) => update({ partNumber: event.target.value.toUpperCase() })} className={field}/></label>
@@ -144,8 +137,16 @@ function PartFields({ part, index, makes, update, remove }: { part: ImportedPart
     <label className={label}>Cantidad<input required type="number" min="1" max="10000" value={part.quantity} onChange={(event) => update({ quantity: Number(event.target.value) })} className={field}/></label>
     <label className={label}>Valor unitario (USD)<input required type="number" min="0" step="0.01" value={part.unitValueUsd} onChange={(event) => update({ unitValueUsd: event.target.value })} className={field}/></label>
     <label className={label}>Peso unitario (kg) <span className="font-normal text-slate-400">(opcional)</span><input type="number" min="0.01" step="0.01" value={part.weightKg} onChange={(event) => update({ weightKg: event.target.value })} className={field}/></label>
-    <label className={label}>Marca compatible<select required value={part.makeId} onChange={(event) => { const option = makes.find((item) => item.id === event.target.value); setModels([]); update({ makeId: event.target.value, makeName: option?.name ?? "", modelId: "", modelName: "" }); }} className={field}><option value="">Selecciona una marca</option>{makes.map((make) => <option key={make.id} value={make.id}>{make.name}</option>)}</select></label>
-    <label className={label}>Modelo compatible<select required disabled={!part.makeId} value={part.modelId} onChange={(event) => { const option = models.find((item) => item.id === event.target.value); update({ modelId: event.target.value, modelName: option?.name ?? "" }); }} className={field}><option value="">Selecciona un modelo</option>{models.map((model) => <option key={model.id} value={model.id}>{model.name}</option>)}</select></label>
+    <ImportVehicleSelector
+      makes={makes}
+      initialMake={part.makeId ? { id: part.makeId, name: part.makeName } : null}
+      initialModel={part.modelId ? { id: part.modelId, name: part.modelName } : null}
+      idPrefix={`part-${part.id}`}
+      makeLabel="Marca compatible"
+      modelLabel="Modelo compatible"
+      includeHiddenInputs={false}
+      onSelectionChange={({ make, model }) => update({ makeId: make?.id ?? "", makeName: make?.name ?? "", modelId: model?.id ?? "", modelName: model?.name ?? "" })}
+    />
     <label className={label}>Motor / versión <span className="font-normal text-slate-400">(opcional)</span><input maxLength={80} value={part.engine} onChange={(event) => update({ engine: event.target.value })} placeholder="Ej. 1.8L" className={field}/></label>
     <label className={label}>Año desde<input required type="number" min="1900" max="2100" value={part.yearFrom} onChange={(event) => update({ yearFrom: Number(event.target.value) })} className={field}/></label>
     <label className={label}>Año hasta<input required type="number" min={part.yearFrom || 1900} max="2100" value={part.yearTo} onChange={(event) => update({ yearTo: Number(event.target.value) })} className={field}/></label>
