@@ -19,4 +19,5 @@ export * from './imports/ImportDatePicker';
 export * from './imports/DeleteMediaButton';
 export * from './imports/ImportFinanceFields';
 export * from './imports/ImportFinanceSummary';
+export * from './imports/ImportTypeFields';
 export * from './marketing/LogisticsServiceSection';

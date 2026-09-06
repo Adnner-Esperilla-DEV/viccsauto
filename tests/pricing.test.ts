@@ -3,6 +3,7 @@ import test from "node:test";
 
 import { calculateTotals, DEFAULT_CUSTOMS_TAX_RATE_BPS } from "../src/lib/pricing";
 import { canTransitionOrder } from "../src/lib/order-states";
+import { getImportFinanceSummary } from "../src/lib/import-finances";
 
 const items = [{ unitPrice: 100_000, quantity: 1 }];
 
@@ -33,4 +34,17 @@ test("impide saltos inválidos de estado", () => {
   assert.equal(canTransitionOrder("PENDING", "COMPLETED"), false);
   assert.equal(canTransitionOrder("PENDING", "CONFIRMED"), true);
   assert.equal(canTransitionOrder("COMPLETED", "COMPLETED"), true);
+});
+
+test("una importación de repuestos suma piezas, envío y servicio logístico", () => {
+  const summary = getImportFinanceSummary({ importType: "PARTS", valueUsd: 215, towingCostUsd: 0, oceanFreightUsd: 0, shippingCostUsd: 120, logisticsServiceUsd: 75, paidAmountUsd: 200 });
+  assert.equal(summary.totalUsd, 410);
+  assert.equal(summary.balanceUsd, 210);
+  assert.equal(summary.paymentStatus, "PARTIAL");
+});
+
+test("una importación de vehículo conserva el valor del vehículo fuera del total", () => {
+  const summary = getImportFinanceSummary({ importType: "VEHICLE", valueUsd: 10_000, towingCostUsd: 300, oceanFreightUsd: 900, shippingCostUsd: 500, logisticsServiceUsd: 200, paidAmountUsd: 0 });
+  assert.equal(summary.totalUsd, 1_200);
+  assert.equal(summary.balanceUsd, 1_200);
 });

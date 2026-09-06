@@ -2,12 +2,12 @@ import { IoArrowDownOutline, IoBoatOutline, IoCameraOutline, IoDocumentTextOutli
 
 import { siteConfig } from "@/config/site";
 
-const whatsappMessage = "Hola, me interesa cotizar el servicio de importación de vehículos desde Estados Unidos a Chile.";
+const whatsappMessage = "Hola, me interesa cotizar el servicio de importación de vehículos o repuestos desde Estados Unidos a Chile.";
 
 export function LogisticsServiceSection() {
   return <section id="importacion-vehiculos" className="overflow-hidden bg-slate-950 py-20 text-white">
     <div className="mx-auto max-w-7xl px-6"><div className="grid items-center gap-12 lg:grid-cols-[1.05fr_.95fr]">
-      <div><span className="inline-flex items-center gap-2 rounded-full border border-blue-400/30 bg-blue-500/10 px-4 py-2 text-sm font-bold text-blue-300"><IoBoatOutline aria-hidden="true"/> Logística internacional de vehículos</span><h2 className="mt-6 max-w-3xl text-4xl font-black leading-tight sm:text-5xl">Importamos tu vehículo desde <span className="text-blue-400">Estados Unidos</span> hasta Chile</h2><p className="mt-5 max-w-2xl text-lg leading-8 text-slate-300">Realizamos el servicio logístico para trasladar vehículos desde Estados Unidos hacia Arica e Iquique, con registro fotográfico, documentación y seguimiento de cada etapa.</p>
+      <div><span className="inline-flex items-center gap-2 rounded-full border border-blue-400/30 bg-blue-500/10 px-4 py-2 text-sm font-bold text-blue-300"><IoBoatOutline aria-hidden="true"/> Logística internacional automotriz</span><h2 className="mt-6 max-w-3xl text-4xl font-black leading-tight sm:text-5xl">Importamos vehículos y repuestos desde <span className="text-blue-400">Estados Unidos</span> hasta Chile</h2><p className="mt-5 max-w-2xl text-lg leading-8 text-slate-300">Trasladamos vehículos, repuestos y autopartes hacia Arica e Iquique, con registro fotográfico, documentación y seguimiento de cada etapa.</p>
         <div className="mt-8 grid gap-3 sm:grid-cols-3">{[[IoCameraOutline, "Registro fotográfico"], [IoDocumentTextOutline, "Documentos centralizados"], [IoShieldCheckmarkOutline, "Seguimiento privado"]].map(([Icon, text]) => <div key={String(text)} className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-4"><Icon className="h-6 w-6 shrink-0 text-blue-400"/><span className="text-sm font-bold">{String(text)}</span></div>)}</div>
         <a href={`https://wa.me/${siteConfig.whatsapp}?text=${encodeURIComponent(whatsappMessage)}`} target="_blank" rel="noreferrer" className="mt-8 inline-flex items-center gap-2 rounded-full bg-emerald-600 px-6 py-3.5 font-black text-white shadow-lg transition hover:bg-emerald-700"><IoLogoWhatsapp aria-hidden="true" className="h-5 w-5"/> Cotizar una importación</a>
       </div>

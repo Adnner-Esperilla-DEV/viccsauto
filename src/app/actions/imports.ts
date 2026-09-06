@@ -1,5 +1,6 @@
 "use server";
 
+import { randomUUID } from "node:crypto";
 import { Prisma } from "@prisma/client";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
@@ -8,37 +9,42 @@ import { z } from "zod";
 
 import { requireStaff } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { getImportFinanceSummary } from "@/lib/import-finances";
 import { deleteObjectsBestEffort, uploadObject } from "@/lib/object-storage";
 import { extractImagesFromZip } from "@/lib/zip-images";
 
 const optionalText = (max: number) => z.string().trim().max(max).optional().transform((value) => value || undefined);
 const optionalNumber = z.preprocess((value) => value === "" || value == null ? undefined : value, z.coerce.number().nonnegative().optional());
+const optionalInteger = z.preprocess((value) => value === "" || value == null ? undefined : value, z.coerce.number().int().optional());
 const usdAmount = z.preprocess(
   (value) => value === "" || value == null ? 0 : value,
   z.coerce.number().finite().nonnegative().max(9_999_999_999.99),
 );
 const importStatusSchema = z.enum(["INCOMING", "RECEIVED", "ASSIGNED", "LOADED", "SHIPPED", "FINALIZED"]);
 const allowedAttachmentTypes = new Set(["application/pdf", "image/jpeg", "image/png", "image/webp"]);
-const vehicleImportDataSchema = z.object({
+const importDataSchema = z.object({
+  importType: z.enum(["VEHICLE", "PARTS"]),
   customerId: z.string().min(1),
-  vin: z.string().trim().min(11).max(25).transform((value) => value.toUpperCase()),
-  year: z.coerce.number().int().min(1900).max(2100),
-  makeId: z.string().min(1),
-  modelId: z.string().min(1),
-  color: z.string().trim().min(2).max(60).transform((value) => value.toUpperCase()),
+  vin: optionalText(25).transform((value) => value?.toUpperCase()),
+  year: optionalInteger,
+  makeId: optionalText(100),
+  modelId: optionalText(100),
+  color: optionalText(60).transform((value) => value?.toUpperCase()),
   lotNumber: optionalText(60),
   weightKg: z.preprocess((value) => value === "" || value == null ? undefined : value, z.coerce.number().int().positive().max(100_000).optional()),
   valueUsd: optionalNumber,
   towingCostUsd: usdAmount,
   oceanFreightUsd: usdAmount,
+  shippingCostUsd: usdAmount,
+  logisticsServiceUsd: usdAmount,
   paidAmountUsd: usdAmount,
   loadType: optionalText(30),
   destinationPort: optionalText(160),
   receivedDate: z.preprocess((value) => value === "" || value == null ? undefined : value, z.coerce.date().optional()),
   hazmat: z.enum(["yes", "no"]).transform((value) => value === "yes"),
   fuel: optionalText(50),
-  keyStatus: z.enum(["NO_KEY", "UNKNOWN", "KEY_PRESENT"]),
-  titleStatus: z.enum(["NO_TITLE", "PENDING", "RECEIVED"]),
+  keyStatus: z.enum(["NO_KEY", "UNKNOWN", "KEY_PRESENT"]).optional().default("UNKNOWN"),
+  titleStatus: z.enum(["NO_TITLE", "PENDING", "RECEIVED"]).optional().default("PENDING"),
   titleNumber: optionalText(80),
   titleState: optionalText(20),
   scheduleB: optionalText(80),
@@ -54,15 +60,43 @@ const vehicleImportDataSchema = z.object({
   arrivalPlace: optionalText(160),
   status: importStatusSchema,
 }).superRefine((value, context) => {
-  const totalCents = Math.round((value.towingCostUsd + value.oceanFreightUsd) * 100);
-  const paidCents = Math.round(value.paidAmountUsd * 100);
-  if (paidCents > totalCents) {
-    context.addIssue({ code: "custom", path: ["paidAmountUsd"], message: "El monto cancelado no puede superar el total de la importación." });
+  if (value.importType === "VEHICLE") {
+    if (!value.vin || value.vin.length < 11) context.addIssue({ code: "custom", path: ["vin"], message: "VIN obligatorio." });
+    if (!value.year || value.year < 1900 || value.year > 2100) context.addIssue({ code: "custom", path: ["year"], message: "Año obligatorio." });
+    if (!value.makeId) context.addIssue({ code: "custom", path: ["makeId"], message: "Marca obligatoria." });
+    if (!value.modelId) context.addIssue({ code: "custom", path: ["modelId"], message: "Modelo obligatorio." });
+    if (!value.color || value.color.length < 2) context.addIssue({ code: "custom", path: ["color"], message: "Color obligatorio." });
   }
   if (value.departureDate && value.arrivalDate && value.arrivalDate < value.departureDate) {
     context.addIssue({ code: "custom", path: ["arrivalDate"], message: "La fecha de llegada no puede ser anterior a la fecha de embarque." });
   }
 });
+
+const importedPartSchema = z.object({
+  description: z.string().trim().min(2).max(160),
+  partNumber: z.string().trim().min(1).max(80).transform((value) => value.toUpperCase()),
+  partBrand: optionalText(80),
+  quantity: z.coerce.number().int().min(1).max(10_000),
+  unitValueUsd: z.coerce.number().finite().nonnegative().max(9_999_999_999.99),
+  weightKg: optionalNumber,
+  makeId: z.string().min(1),
+  modelId: z.string().min(1),
+  yearFrom: z.coerce.number().int().min(1900).max(2100),
+  yearTo: z.coerce.number().int().min(1900).max(2100),
+  engine: optionalText(80),
+}).refine((part) => part.yearTo >= part.yearFrom, { path: ["yearTo"], message: "El año final no puede ser menor al inicial." });
+
+function parseParts(formData: FormData) {
+  try {
+    return z.array(importedPartSchema).min(1).max(50).safeParse(JSON.parse(String(formData.get("partsJson") ?? "[]")));
+  } catch {
+    return z.array(importedPartSchema).min(1).max(50).safeParse([]);
+  }
+}
+
+function newReferenceCode() {
+  return `IMP-${new Date().getFullYear()}-${randomUUID().replaceAll("-", "").slice(0, 8).toUpperCase()}`;
+}
 
 async function audit(userId: string, action: string, entityId: string, details?: unknown) {
   const ip = (await headers()).get("x-forwarded-for")?.split(",")[0];
@@ -89,20 +123,36 @@ async function uploadFiles(files: UploadableFile[], prefix: string) {
   }
 }
 
+async function partsHaveValidCompatibility(parts: z.infer<typeof importedPartSchema>[]) {
+  const modelIds = [...new Set(parts.map((part) => part.modelId))];
+  const models = await db.vehicleModel.findMany({ where: { id: { in: modelIds }, isActive: true, make: { isActive: true } }, select: { id: true, makeId: true } });
+  const makeByModel = new Map(models.map((model) => [model.id, model.makeId]));
+  return parts.every((part) => makeByModel.get(part.modelId) === part.makeId);
+}
+
 export async function createVehicleImportAction(formData: FormData) {
   const user = await requireStaff();
   const noteResult = z.preprocess((value) => value === "" || value == null ? undefined : value, z.string().trim().max(2000).optional()).safeParse(formData.get("initialNote"));
   if (!noteResult.success) importError("invalid");
   const initialNote = noteResult.data;
-  const parsed = vehicleImportDataSchema.safeParse(Object.fromEntries(formData));
-  if (!parsed.success) importError(parsed.error.issues.some((issue) => issue.path[0] === "paidAmountUsd") ? "payment" : "invalid");
+  const parsed = importDataSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) importError("invalid");
+  const partsResult = parseParts(formData);
+  if (parsed.data.importType === "PARTS" && !partsResult.success) importError("invalid");
+  const parts = parsed.data.importType === "PARTS" && partsResult.success ? partsResult.data : [];
 
-  const [customer, selectedVehicleModel] = await Promise.all([
+  const [customer, selectedVehicleModel, validParts] = await Promise.all([
     db.user.findFirst({ where: { id: parsed.data.customerId, role: "CUSTOMER", status: { in: ["ACTIVE", "POS_ONLY"] } }, select: { id: true } }),
-    db.vehicleModel.findFirst({ where: { id: parsed.data.modelId, makeId: parsed.data.makeId, isActive: true, make: { isActive: true } }, select: { name: true, make: { select: { name: true } } } }),
+    parsed.data.importType === "VEHICLE" ? db.vehicleModel.findFirst({ where: { id: parsed.data.modelId, makeId: parsed.data.makeId, isActive: true, make: { isActive: true } }, select: { name: true, make: { select: { name: true } } } }) : null,
+    parsed.data.importType === "PARTS" ? partsHaveValidCompatibility(parts) : true,
   ]);
   if (!customer) importError("customer");
-  if (!selectedVehicleModel) importError("invalid");
+  if (parsed.data.importType === "VEHICLE" && !selectedVehicleModel) importError("invalid");
+  if (!validParts) importError("invalid");
+
+  const goodsValueUsd = parts.reduce((totalCents, part) => totalCents + Math.round(part.unitValueUsd * 100) * part.quantity, 0) / 100;
+  const finance = getImportFinanceSummary({ importType: parsed.data.importType, valueUsd: parsed.data.importType === "PARTS" ? goodsValueUsd : parsed.data.valueUsd, towingCostUsd: parsed.data.towingCostUsd, oceanFreightUsd: parsed.data.oceanFreightUsd, shippingCostUsd: parsed.data.shippingCostUsd, logisticsServiceUsd: parsed.data.logisticsServiceUsd, paidAmountUsd: parsed.data.paidAmountUsd });
+  if (Math.round(finance.paidAmountUsd * 100) > Math.round(finance.totalUsd * 100)) importError("payment");
 
   const zipFile = formData.get("imageZip");
   if (!(zipFile instanceof File) || !zipFile.size || zipFile.size > 30 * 1024 * 1024 || !/\.zip$/i.test(zipFile.name)) importError("zip");
@@ -129,9 +179,27 @@ export async function createVehicleImportAction(formData: FormData) {
 
   let vehicleImport;
   try {
-    const vehicleData = parsed.data;
+    const data = parsed.data;
     vehicleImport = await db.$transaction(async (tx) => {
-      const row = await tx.vehicleImport.create({ data: { ...vehicleData, make: selectedVehicleModel.make.name, model: selectedVehicleModel.name, valueUsd: vehicleData.valueUsd ?? null } });
+      const row = await tx.vehicleImport.create({ data: {
+        importType: data.importType, referenceCode: newReferenceCode(), customerId: data.customerId,
+        vin: data.importType === "VEHICLE" ? data.vin : null, year: data.importType === "VEHICLE" ? data.year : null,
+        makeId: data.importType === "VEHICLE" ? data.makeId : null, make: data.importType === "VEHICLE" ? selectedVehicleModel?.make.name : null,
+        modelId: data.importType === "VEHICLE" ? data.modelId : null, model: data.importType === "VEHICLE" ? selectedVehicleModel?.name : null,
+        color: data.importType === "VEHICLE" ? data.color : null, fuel: data.importType === "VEHICLE" ? data.fuel : null,
+        weightKg: data.importType === "VEHICLE" ? data.weightKg : null,
+        valueUsd: data.importType === "PARTS" ? goodsValueUsd : data.valueUsd ?? null,
+        towingCostUsd: data.importType === "VEHICLE" ? data.towingCostUsd : 0, oceanFreightUsd: data.importType === "VEHICLE" ? data.oceanFreightUsd : 0,
+        shippingCostUsd: data.importType === "PARTS" ? data.shippingCostUsd : 0, logisticsServiceUsd: data.importType === "PARTS" ? data.logisticsServiceUsd : 0,
+        paidAmountUsd: data.paidAmountUsd, lotNumber: data.lotNumber, loadType: data.loadType, destinationPort: data.destinationPort,
+        receivedDate: data.receivedDate, hazmat: data.hazmat, keyStatus: data.importType === "VEHICLE" ? data.keyStatus : "UNKNOWN",
+        titleStatus: data.importType === "VEHICLE" ? data.titleStatus : "PENDING", titleNumber: data.importType === "VEHICLE" ? data.titleNumber : null,
+        titleState: data.importType === "VEHICLE" ? data.titleState : null, scheduleB: data.importType === "VEHICLE" ? data.scheduleB : null,
+        customerParty: data.customerParty, shipper: data.shipper, consignee: data.consignee, notifyParty: data.notifyParty,
+        exportReference: data.exportReference, containerNumber: data.containerNumber, shippingLine: data.shippingLine,
+        departureDate: data.departureDate, arrivalDate: data.arrivalDate, arrivalPlace: data.arrivalPlace, status: data.status,
+      } });
+      if (parts.length) await tx.importedPart.createMany({ data: parts.map((part, position) => ({ importId: row.id, description: part.description, partNumber: part.partNumber, partBrand: part.partBrand, quantity: part.quantity, unitValueUsd: part.unitValueUsd, weightKg: part.weightKg, makeId: part.makeId, modelId: part.modelId, yearFrom: part.yearFrom, yearTo: part.yearTo, engine: part.engine, position })) });
       await tx.vehicleImportImage.createMany({ data: uploadedImages.map((image, position) => ({ importId: row.id, filename: image.filename, mimeType: image.mimeType, storageKey: image.storageKey, position })) });
       if (uploadedAttachments.length) await tx.vehicleImportAttachment.createMany({ data: uploadedAttachments.map((attachment) => ({ importId: row.id, filename: attachment.filename, mimeType: attachment.mimeType, size: attachment.size ?? attachment.data.length, storageKey: attachment.storageKey })) });
       if (initialNote) await tx.vehicleImportNote.create({ data: { importId: row.id, authorId: user.id, body: initialNote, visibleToCustomer: true } });
@@ -143,7 +211,7 @@ export async function createVehicleImportAction(formData: FormData) {
     throw error;
   }
 
-  await audit(user.id, "CREATE", vehicleImport.id, { vin: vehicleImport.vin, customerId: customer.id, towingCostUsd: vehicleImport.towingCostUsd, oceanFreightUsd: vehicleImport.oceanFreightUsd, paidAmountUsd: vehicleImport.paidAmountUsd, imageCount: images.length, attachmentCount: attachments.length, initialCustomerNote: Boolean(initialNote) });
+  await audit(user.id, "CREATE", vehicleImport.id, { importType: vehicleImport.importType, referenceCode: vehicleImport.referenceCode, vin: vehicleImport.vin, customerId: customer.id, partCount: parts.length, paidAmountUsd: vehicleImport.paidAmountUsd, imageCount: images.length, attachmentCount: attachments.length, initialCustomerNote: Boolean(initialNote) });
   revalidatePath("/admin/imports");
   revalidatePath("/imports");
   redirect(`/admin/imports/${vehicleImport.id}?ok=created`);
@@ -151,48 +219,55 @@ export async function createVehicleImportAction(formData: FormData) {
 
 export async function updateVehicleImportAction(formData: FormData) {
   const user = await requireStaff();
-  const parsed = vehicleImportDataSchema.safeExtend({ id: z.string().min(1) }).safeParse(Object.fromEntries(formData));
+  const parsed = importDataSchema.safeExtend({ id: z.string().min(1) }).safeParse(Object.fromEntries(formData));
   const fallbackId = encodeURIComponent(String(formData.get("id") ?? ""));
   if (!parsed.success) {
-    const errorCode = parsed.error.issues.some((issue) => issue.path[0] === "paidAmountUsd") ? "payment" : "invalid";
-    redirect(`/admin/imports/${fallbackId}/edit?error=${errorCode}`);
+    redirect(`/admin/imports/${fallbackId}/edit?error=invalid`);
   }
   const data = parsed.data;
-  const [existing, customer, selectedVehicleModel] = await Promise.all([
-    db.vehicleImport.findUnique({ where: { id: data.id }, select: { id: true, customerId: true } }),
+  const partsResult = parseParts(formData);
+  if (data.importType === "PARTS" && !partsResult.success) redirect(`/admin/imports/${fallbackId}/edit?error=invalid`);
+  const parts = data.importType === "PARTS" && partsResult.success ? partsResult.data : [];
+  const [existing, customer, selectedVehicleModel, validParts] = await Promise.all([
+    db.vehicleImport.findUnique({ where: { id: data.id }, select: { id: true, customerId: true, importType: true } }),
     db.user.findFirst({ where: { id: data.customerId, role: "CUSTOMER", status: { in: ["ACTIVE", "POS_ONLY"] } }, select: { id: true } }),
-    db.vehicleModel.findFirst({ where: { id: data.modelId, makeId: data.makeId, isActive: true, make: { isActive: true } }, select: { name: true, make: { select: { name: true } } } }),
+    data.importType === "VEHICLE" ? db.vehicleModel.findFirst({ where: { id: data.modelId, makeId: data.makeId, isActive: true, make: { isActive: true } }, select: { name: true, make: { select: { name: true } } } }) : null,
+    data.importType === "PARTS" ? partsHaveValidCompatibility(parts) : true,
   ]);
   if (!existing) redirect("/admin/imports");
+  if (existing.importType !== data.importType) redirect(`/admin/imports/${data.id}/edit?error=invalid`);
   if (!customer) redirect(`/admin/imports/${data.id}/edit?error=customer`);
-  if (!selectedVehicleModel) redirect(`/admin/imports/${data.id}/edit?error=invalid`);
-  const { id, ...fields } = data;
+  if (data.importType === "VEHICLE" && !selectedVehicleModel) redirect(`/admin/imports/${data.id}/edit?error=invalid`);
+  if (!validParts) redirect(`/admin/imports/${data.id}/edit?error=invalid`);
+  const goodsValueUsd = parts.reduce((totalCents, part) => totalCents + Math.round(part.unitValueUsd * 100) * part.quantity, 0) / 100;
+  const finance = getImportFinanceSummary({ importType: data.importType, valueUsd: data.importType === "PARTS" ? goodsValueUsd : data.valueUsd, towingCostUsd: data.towingCostUsd, oceanFreightUsd: data.oceanFreightUsd, shippingCostUsd: data.shippingCostUsd, logisticsServiceUsd: data.logisticsServiceUsd, paidAmountUsd: data.paidAmountUsd });
+  if (Math.round(finance.paidAmountUsd * 100) > Math.round(finance.totalUsd * 100)) redirect(`/admin/imports/${data.id}/edit?error=payment`);
+  const { id } = data;
   try {
-    await db.vehicleImport.update({ where: { id }, data: {
-      ...fields,
-      make: selectedVehicleModel.make.name,
-      model: selectedVehicleModel.name,
-      lotNumber: fields.lotNumber ?? null,
-      weightKg: fields.weightKg ?? null,
-      valueUsd: fields.valueUsd ?? null,
-      loadType: fields.loadType ?? null,
-      destinationPort: fields.destinationPort ?? null,
-      receivedDate: fields.receivedDate ?? null,
-      fuel: fields.fuel ?? null,
-      titleNumber: fields.titleNumber ?? null,
-      titleState: fields.titleState ?? null,
-      scheduleB: fields.scheduleB ?? null,
-      containerNumber: fields.containerNumber ?? null,
-      shippingLine: fields.shippingLine ?? null,
-      departureDate: fields.departureDate ?? null,
-      arrivalDate: fields.arrivalDate ?? null,
-      arrivalPlace: fields.arrivalPlace ?? null,
-    } });
+    await db.$transaction(async (tx) => {
+      await tx.vehicleImport.update({ where: { id }, data: {
+        customerId: data.customerId, vin: data.importType === "VEHICLE" ? data.vin : null, year: data.importType === "VEHICLE" ? data.year : null,
+        makeId: data.importType === "VEHICLE" ? data.makeId : null, make: data.importType === "VEHICLE" ? selectedVehicleModel?.make.name : null,
+        modelId: data.importType === "VEHICLE" ? data.modelId : null, model: data.importType === "VEHICLE" ? selectedVehicleModel?.name : null,
+        color: data.importType === "VEHICLE" ? data.color : null, fuel: data.importType === "VEHICLE" ? data.fuel : null,
+        weightKg: data.importType === "VEHICLE" ? data.weightKg : null, valueUsd: data.importType === "PARTS" ? goodsValueUsd : data.valueUsd ?? null,
+        towingCostUsd: data.importType === "VEHICLE" ? data.towingCostUsd : 0, oceanFreightUsd: data.importType === "VEHICLE" ? data.oceanFreightUsd : 0,
+        shippingCostUsd: data.importType === "PARTS" ? data.shippingCostUsd : 0, logisticsServiceUsd: data.importType === "PARTS" ? data.logisticsServiceUsd : 0,
+        paidAmountUsd: data.paidAmountUsd, lotNumber: data.lotNumber ?? null, loadType: data.loadType ?? null, destinationPort: data.destinationPort ?? null,
+        receivedDate: data.receivedDate ?? null, hazmat: data.hazmat, keyStatus: data.importType === "VEHICLE" ? data.keyStatus : "UNKNOWN",
+        titleStatus: data.importType === "VEHICLE" ? data.titleStatus : "PENDING", titleNumber: data.importType === "VEHICLE" ? data.titleNumber ?? null : null,
+        titleState: data.importType === "VEHICLE" ? data.titleState ?? null : null, scheduleB: data.importType === "VEHICLE" ? data.scheduleB ?? null : null,
+        containerNumber: data.containerNumber ?? null, shippingLine: data.shippingLine ?? null, departureDate: data.departureDate ?? null,
+        arrivalDate: data.arrivalDate ?? null, arrivalPlace: data.arrivalPlace ?? null, status: data.status,
+      } });
+      await tx.importedPart.deleteMany({ where: { importId: id } });
+      if (parts.length) await tx.importedPart.createMany({ data: parts.map((part, position) => ({ importId: id, description: part.description, partNumber: part.partNumber, partBrand: part.partBrand, quantity: part.quantity, unitValueUsd: part.unitValueUsd, weightKg: part.weightKg, makeId: part.makeId, modelId: part.modelId, yearFrom: part.yearFrom, yearTo: part.yearTo, engine: part.engine, position })) });
+    });
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") redirect(`/admin/imports/${id}/edit?error=duplicate`);
     throw error;
   }
-  await audit(user.id, "UPDATE", id, { previousCustomerId: existing.customerId, customerId: customer.id, makeId: fields.makeId, modelId: fields.modelId, towingCostUsd: fields.towingCostUsd, oceanFreightUsd: fields.oceanFreightUsd, paidAmountUsd: fields.paidAmountUsd });
+  await audit(user.id, "UPDATE", id, { importType: data.importType, previousCustomerId: existing.customerId, customerId: customer.id, partCount: parts.length, paidAmountUsd: data.paidAmountUsd });
   revalidatePath("/admin/imports");
   revalidatePath(`/admin/imports/${id}`);
   revalidatePath("/imports");
