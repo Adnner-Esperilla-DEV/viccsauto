@@ -20,7 +20,9 @@ export async function getOrCreateCart(userId?: string) {
   const jar = await cookies();
   const existingToken = jar.get(CART_COOKIE)?.value;
   if (existingToken) {
-    const existing = await db.cart.findFirst({ where: { token: existingToken, status: "ACTIVE", expiresAt: { gt: new Date() } } });
+    const existing = await db.cart.findFirst({
+      where: { token: existingToken, status: "ACTIVE", expiresAt: { gt: new Date() } },
+    });
     if (existing) {
       if (userId && !existing.userId) await db.cart.update({ where: { id: existing.id }, data: { userId } });
       return existing;
@@ -28,12 +30,23 @@ export async function getOrCreateCart(userId?: string) {
   }
   const token = randomBytes(32).toString("base64url");
   const cart = await db.cart.create({ data: { token, userId, expiresAt: new Date(Date.now() + CART_MAX_AGE * 1000) } });
-  jar.set(CART_COOKIE, token, { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/", maxAge: CART_MAX_AGE });
+  jar.set(CART_COOKIE, token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: CART_MAX_AGE,
+  });
   return cart;
 }
 
 export async function getCartSummary() {
   const cart = await readCart();
   const items = cart?.items ?? [];
-  return { cart, items, ...calculateTotals(items, "ARICA"), count: items.reduce((sum, item) => sum + item.quantity, 0) };
+  return {
+    cart,
+    items,
+    ...calculateTotals(items, "ARICA"),
+    count: items.reduce((sum, item) => sum + item.quantity, 0),
+  };
 }

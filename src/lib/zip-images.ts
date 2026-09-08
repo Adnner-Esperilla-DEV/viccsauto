@@ -8,15 +8,24 @@ export type ExtractedZipImage = { filename: string; mimeType: string; data: Buff
 function imageMime(filename: string, data: Buffer) {
   const extension = filename.split(".").pop()?.toLowerCase();
   if ((extension === "jpg" || extension === "jpeg") && data[0] === 0xff && data[1] === 0xd8) return "image/jpeg";
-  if (extension === "png" && data.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))) return "image/png";
-  if (extension === "webp" && data.subarray(0, 4).toString("ascii") === "RIFF" && data.subarray(8, 12).toString("ascii") === "WEBP") return "image/webp";
+  if (extension === "png" && data.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])))
+    return "image/png";
+  if (
+    extension === "webp" &&
+    data.subarray(0, 4).toString("ascii") === "RIFF" &&
+    data.subarray(8, 12).toString("ascii") === "WEBP"
+  )
+    return "image/webp";
   return null;
 }
 
 export function extractImagesFromZip(zip: Buffer): ExtractedZipImage[] {
   let endOffset = -1;
   for (let offset = zip.length - 22; offset >= Math.max(0, zip.length - 65_557); offset -= 1) {
-    if (zip.readUInt32LE(offset) === 0x06054b50) { endOffset = offset; break; }
+    if (zip.readUInt32LE(offset) === 0x06054b50) {
+      endOffset = offset;
+      break;
+    }
   }
   if (endOffset < 0) throw new Error("ZIP_INVALID");
 
@@ -35,7 +44,10 @@ export function extractImagesFromZip(zip: Buffer): ExtractedZipImage[] {
     const extraLength = zip.readUInt16LE(offset + 30);
     const commentLength = zip.readUInt16LE(offset + 32);
     const localOffset = zip.readUInt32LE(offset + 42);
-    const filename = zip.subarray(offset + 46, offset + 46 + nameLength).toString("utf8").replace(/\\/g, "/");
+    const filename = zip
+      .subarray(offset + 46, offset + 46 + nameLength)
+      .toString("utf8")
+      .replace(/\\/g, "/");
     offset += 46 + nameLength + extraLength + commentLength;
 
     if ((flags & 1) !== 0) throw new Error("ZIP_ENCRYPTED");
@@ -48,7 +60,12 @@ export function extractImagesFromZip(zip: Buffer): ExtractedZipImage[] {
     const dataStart = localOffset + 30 + localNameLength + localExtraLength;
     if (dataStart + compressedSize > zip.length) throw new Error("ZIP_INVALID");
     const compressed = zip.subarray(dataStart, dataStart + compressedSize);
-    const data = method === 0 ? Buffer.from(compressed) : method === 8 ? inflateRawSync(compressed, { maxOutputLength: Math.max(1, remainingSize) }) : null;
+    const data =
+      method === 0
+        ? Buffer.from(compressed)
+        : method === 8
+          ? inflateRawSync(compressed, { maxOutputLength: Math.max(1, remainingSize) })
+          : null;
     if (!data || data.length !== uncompressedSize) throw new Error("ZIP_UNSUPPORTED");
     const mimeType = imageMime(filename, data);
     if (!mimeType) throw new Error("ZIP_IMAGE_INVALID");

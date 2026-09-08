@@ -2,12 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
-import {
-  IoAddOutline,
-  IoCloseOutline,
-  IoCloudUploadOutline,
-  IoImageOutline,
-} from "react-icons/io5";
+import { IoAddOutline, IoCloseOutline, IoCloudUploadOutline, IoImageOutline } from "react-icons/io5";
 
 import { createProductAction } from "@/app/actions/admin";
 import { ProductCurrencyFields } from "@/components/admin/ProductCurrencyFields";
@@ -136,8 +131,12 @@ export function ProductCreateModal({ brands, categories, initialOpen = false, se
             <header className="flex items-start justify-between gap-6 border-b border-slate-200 px-6 py-5 sm:px-8">
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.18em] text-blue-700">Catálogo</p>
-                <h2 id={titleId} className="mt-1 text-2xl font-black text-slate-950">Nuevo producto</h2>
-                <p className="mt-1 text-sm font-normal text-slate-500">Podrás gestionar la compatibilidad después de crearlo.</p>
+                <h2 id={titleId} className="mt-1 text-2xl font-black text-slate-950">
+                  Nuevo producto
+                </h2>
+                <p className="mt-1 text-sm font-normal text-slate-500">
+                  Podrás gestionar la compatibilidad después de crearlo.
+                </p>
               </div>
               <button
                 type="button"
@@ -160,7 +159,14 @@ export function ProductCreateModal({ brands, categories, initialOpen = false, se
               }}
             >
               <input type="hidden" name="imagesData" value={JSON.stringify(images.map((image) => image.data))} />
-              {serverError && <p role="alert" className="rounded-2xl border border-red-100 bg-red-50 p-4 text-sm font-semibold text-red-700 sm:col-span-2">{serverError}</p>}
+              {serverError && (
+                <p
+                  role="alert"
+                  className="rounded-2xl border border-red-100 bg-red-50 p-4 text-sm font-semibold text-red-700 sm:col-span-2"
+                >
+                  {serverError}
+                </p>
+              )}
 
               <label className="grid gap-2 text-sm font-bold text-slate-700 sm:col-span-2">
                 Nombre del producto
@@ -182,7 +188,14 @@ export function ProductCreateModal({ brands, categories, initialOpen = false, se
 
               <label className="grid gap-2 text-sm font-bold text-slate-700">
                 SKU
-                <input required name="sku" minLength={3} maxLength={60} placeholder="FRE-001" className="rounded-xl border border-slate-300 px-4 py-3 font-normal outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-100" />
+                <input
+                  required
+                  name="sku"
+                  minLength={3}
+                  maxLength={60}
+                  placeholder="FRE-001"
+                  className="rounded-xl border border-slate-300 px-4 py-3 font-normal outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-100"
+                />
               </label>
               <label className="grid gap-2 text-sm font-bold text-slate-700">
                 Slug
@@ -203,16 +216,35 @@ export function ProductCreateModal({ brands, categories, initialOpen = false, se
 
               <label className="grid gap-2 text-sm font-bold text-slate-700">
                 Categoría
-                <select required name="categoryId" defaultValue="" className="rounded-xl border border-slate-300 bg-white px-4 py-3 font-normal outline-none focus:border-blue-600">
-                  <option value="" disabled>Seleccionar categoría</option>
-                  {categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
+                <select
+                  required
+                  name="categoryId"
+                  defaultValue=""
+                  className="rounded-xl border border-slate-300 bg-white px-4 py-3 font-normal outline-none focus:border-blue-600"
+                >
+                  <option value="" disabled>
+                    Seleccionar categoría
+                  </option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
                 </select>
               </label>
               <label className="grid gap-2 text-sm font-bold text-slate-700">
                 Marca <span className="font-normal text-slate-400">(opcional)</span>
-                <select name="brandId" defaultValue="" className="rounded-xl border border-slate-300 bg-white px-4 py-3 font-normal outline-none focus:border-blue-600">
+                <select
+                  name="brandId"
+                  defaultValue=""
+                  className="rounded-xl border border-slate-300 bg-white px-4 py-3 font-normal outline-none focus:border-blue-600"
+                >
                   <option value="">Sin marca / genérico</option>
-                  {brands.map((brand) => <option key={brand.id} value={brand.id}>{brand.name}</option>)}
+                  {brands.map((brand) => (
+                    <option key={brand.id} value={brand.id}>
+                      {brand.name}
+                    </option>
+                  ))}
                 </select>
               </label>
 
@@ -229,46 +261,105 @@ export function ProductCreateModal({ brands, categories, initialOpen = false, se
                   placeholder="29990"
                   className="rounded-xl border border-slate-300 px-4 py-3 font-normal outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-100"
                 />
-                <span className="text-xs font-normal text-slate-500">Se completa con la conversión, pero puedes modificarlo.</span>
+                <span className="text-xs font-normal text-slate-500">
+                  Se completa con la conversión, pero puedes modificarlo.
+                </span>
               </label>
               <label className="grid gap-2 text-sm font-bold text-slate-700">
                 Stock inicial
-                <input required type="number" name="stock" min={0} step={1} defaultValue={0} className="rounded-xl border border-slate-300 px-4 py-3 font-normal outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-100" />
+                <input
+                  required
+                  type="number"
+                  name="stock"
+                  min={0}
+                  step={1}
+                  defaultValue={0}
+                  className="rounded-xl border border-slate-300 px-4 py-3 font-normal outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-100"
+                />
               </label>
 
               <ProductCurrencyFields onConversionChange={(convertedPrice) => setPriceClp(String(convertedPrice))} />
 
               <label className="grid gap-2 text-sm font-bold text-slate-700 sm:col-span-2">
                 Códigos OEM <span className="font-normal text-slate-400">(opcionales, separados por coma)</span>
-                <input name="oemCodes" maxLength={500} placeholder="04465-0D150, 04465-YZZE1" className="rounded-xl border border-slate-300 px-4 py-3 font-normal outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-100" />
+                <input
+                  name="oemCodes"
+                  maxLength={500}
+                  placeholder="04465-0D150, 04465-YZZE1"
+                  className="rounded-xl border border-slate-300 px-4 py-3 font-normal outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-100"
+                />
               </label>
 
               <label className="grid gap-2 text-sm font-bold text-slate-700 sm:col-span-2">
                 Descripción corta
-                <input required name="shortDescription" minLength={5} maxLength={220} placeholder="Resumen visible en el catálogo" className="rounded-xl border border-slate-300 px-4 py-3 font-normal outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-100" />
+                <input
+                  required
+                  name="shortDescription"
+                  minLength={5}
+                  maxLength={220}
+                  placeholder="Resumen visible en el catálogo"
+                  className="rounded-xl border border-slate-300 px-4 py-3 font-normal outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-100"
+                />
               </label>
               <label className="grid gap-2 text-sm font-bold text-slate-700 sm:col-span-2">
                 Descripción completa
-                <textarea required name="description" minLength={10} maxLength={2000} rows={4} placeholder="Características, aplicación y recomendaciones..." className="resize-y rounded-xl border border-slate-300 px-4 py-3 font-normal outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-100" />
+                <textarea
+                  required
+                  name="description"
+                  minLength={10}
+                  maxLength={2000}
+                  rows={4}
+                  placeholder="Características, aplicación y recomendaciones..."
+                  className="resize-y rounded-xl border border-slate-300 px-4 py-3 font-normal outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-100"
+                />
               </label>
 
               <div className="sm:col-span-2">
                 <div className="flex items-end justify-between gap-4">
-                  <span className="text-sm font-bold text-slate-700">Imágenes del producto <span className="font-normal text-slate-400">(opcional)</span></span>
-                  <span className="text-xs font-semibold text-slate-500">{images.length}/{MAX_PRODUCT_IMAGES}</span>
+                  <span className="text-sm font-bold text-slate-700">
+                    Imágenes del producto <span className="font-normal text-slate-400">(opcional)</span>
+                  </span>
+                  <span className="text-xs font-semibold text-slate-500">
+                    {images.length}/{MAX_PRODUCT_IMAGES}
+                  </span>
                 </div>
                 {images.length > 0 && (
                   <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                     {images.map((image, index) => (
-                      <article key={`${image.name}-${index}`} className={`relative overflow-hidden rounded-2xl border bg-white ${index === 0 ? "border-blue-500 ring-2 ring-blue-100" : "border-slate-200"}`}>
+                      <article
+                        key={`${image.name}-${index}`}
+                        className={`relative overflow-hidden rounded-2xl border bg-white ${index === 0 ? "border-blue-500 ring-2 ring-blue-100" : "border-slate-200"}`}
+                      >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={image.data} alt={`Vista previa ${index + 1}`} className="aspect-[4/3] w-full object-contain" />
+                        <img
+                          src={image.data}
+                          alt={`Vista previa ${index + 1}`}
+                          className="aspect-[4/3] w-full object-contain"
+                        />
                         <div className="border-t border-slate-100 p-3">
                           <div className="flex items-center justify-between gap-2">
-                            <span className={`rounded-full px-2 py-1 text-[11px] font-bold ${index === 0 ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-500"}`}>{index === 0 ? "Portada" : `Imagen ${index + 1}`}</span>
-                            <button type="button" onClick={() => removeImage(index)} className="text-xs font-bold text-red-700">Quitar</button>
+                            <span
+                              className={`rounded-full px-2 py-1 text-[11px] font-bold ${index === 0 ? "bg-blue-100 text-blue-700" : "bg-slate-100 text-slate-500"}`}
+                            >
+                              {index === 0 ? "Portada" : `Imagen ${index + 1}`}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => removeImage(index)}
+                              className="text-xs font-bold text-red-700"
+                            >
+                              Quitar
+                            </button>
                           </div>
-                          {index > 0 && <button type="button" onClick={() => makeCover(index)} className="mt-2 text-xs font-bold text-blue-700 hover:underline">Usar como portada</button>}
+                          {index > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => makeCover(index)}
+                              className="mt-2 text-xs font-bold text-blue-700 hover:underline"
+                            >
+                              Usar como portada
+                            </button>
+                          )}
                         </div>
                       </article>
                     ))}
@@ -276,9 +367,19 @@ export function ProductCreateModal({ brands, categories, initialOpen = false, se
                 )}
                 {images.length < MAX_PRODUCT_IMAGES && (
                   <label className="mt-2 flex cursor-pointer items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-slate-300 px-5 py-7 text-center transition hover:border-blue-500 hover:bg-blue-50">
-                    {processingImage ? <span className="h-6 w-6 animate-spin rounded-full border-2 border-blue-200 border-t-blue-700" /> : <IoCloudUploadOutline className="h-7 w-7 text-blue-700" />}
+                    {processingImage ? (
+                      <span className="h-6 w-6 animate-spin rounded-full border-2 border-blue-200 border-t-blue-700" />
+                    ) : (
+                      <IoCloudUploadOutline className="h-7 w-7 text-blue-700" />
+                    )}
                     <span>
-                      <b className="block text-sm text-slate-800">{processingImage ? "Optimizando imágenes..." : images.length ? "Agregar más imágenes" : "Seleccionar de 1 a 5 imágenes"}</b>
+                      <b className="block text-sm text-slate-800">
+                        {processingImage
+                          ? "Optimizando imágenes..."
+                          : images.length
+                            ? "Agregar más imágenes"
+                            : "Seleccionar de 1 a 5 imágenes"}
+                      </b>
                       <small className="text-slate-500">Se ajustan a 4:3 y se convierten automáticamente a WEBP</small>
                     </span>
                     <input
@@ -292,7 +393,11 @@ export function ProductCreateModal({ brands, categories, initialOpen = false, se
                     />
                   </label>
                 )}
-                {imageError && <p role="alert" className="mt-2 text-sm font-semibold text-red-700">{imageError}</p>}
+                {imageError && (
+                  <p role="alert" className="mt-2 text-sm font-semibold text-red-700">
+                    {imageError}
+                  </p>
+                )}
               </div>
 
               <label className="flex items-start gap-3 rounded-2xl border border-blue-100 bg-blue-50 p-4 sm:col-span-2">
@@ -304,13 +409,23 @@ export function ProductCreateModal({ brands, categories, initialOpen = false, se
                   className="mt-1 h-4 w-4 rounded border-slate-300 text-blue-700"
                 />
                 <span>
-                  <span className="flex items-center gap-2 text-sm font-bold text-slate-900"><IoImageOutline className="text-blue-700" /> Mostrar en la página principal</span>
-                  <span className="mt-1 block text-xs font-normal text-slate-600">Para activar esta opción es obligatorio agregar una imagen.</span>
+                  <span className="flex items-center gap-2 text-sm font-bold text-slate-900">
+                    <IoImageOutline className="text-blue-700" /> Mostrar en la página principal
+                  </span>
+                  <span className="mt-1 block text-xs font-normal text-slate-600">
+                    Para activar esta opción es obligatorio agregar una imagen.
+                  </span>
                 </span>
               </label>
 
               <div className="flex justify-end gap-3 border-t border-slate-200 pt-5 sm:col-span-2">
-                <button type="button" onClick={() => setOpen(false)} className="rounded-xl border border-slate-300 px-6 py-3 font-bold text-slate-700 hover:bg-slate-50">Cancelar</button>
+                <button
+                  type="button"
+                  onClick={() => setOpen(false)}
+                  className="rounded-xl border border-slate-300 px-6 py-3 font-bold text-slate-700 hover:bg-slate-50"
+                >
+                  Cancelar
+                </button>
                 <SubmitButton />
               </div>
             </form>

@@ -24,7 +24,10 @@ function SubmitButton() {
     >
       {pending ? (
         <>
-          <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" aria-hidden="true" />
+          <span
+            className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"
+            aria-hidden="true"
+          />
           Ingresando...
         </>
       ) : (
@@ -42,7 +45,11 @@ export function LoginForm({ hasError }: { hasError: boolean }) {
   return (
     <form action={loginAction} className="space-y-5">
       {hasError && (
-        <div role="alert" aria-live="polite" className="flex gap-3 rounded-2xl border border-red-100 bg-red-50 p-4 text-sm text-red-700">
+        <div
+          role="alert"
+          aria-live="polite"
+          className="flex gap-3 rounded-2xl border border-red-100 bg-red-50 p-4 text-sm text-red-700"
+        >
           <IoAlertCircleOutline className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
           <div>
             <p className="font-bold text-red-800">No pudimos iniciar sesión</p>
@@ -54,7 +61,10 @@ export function LoginForm({ hasError }: { hasError: boolean }) {
       <label className="block text-sm font-bold text-slate-700" htmlFor="email">
         Correo electrónico
         <span className="relative block">
-          <IoMailOutline className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400 peer-focus:text-blue-600" aria-hidden="true" />
+          <IoMailOutline
+            className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400 peer-focus:text-blue-600"
+            aria-hidden="true"
+          />
           <input
             id="email"
             required
@@ -72,13 +82,21 @@ export function LoginForm({ hasError }: { hasError: boolean }) {
 
       <div>
         <div className="flex items-center justify-between gap-4">
-          <label className="text-sm font-bold text-slate-700" htmlFor="password">Contraseña</label>
-          <Link href="/auth/forgot-password" className="text-xs font-bold text-blue-700 underline-offset-4 hover:underline">
+          <label className="text-sm font-bold text-slate-700" htmlFor="password">
+            Contraseña
+          </label>
+          <Link
+            href="/auth/forgot-password"
+            className="text-xs font-bold text-blue-700 underline-offset-4 hover:underline"
+          >
             ¿La olvidaste?
           </Link>
         </div>
         <span className="relative block">
-          <IoLockClosedOutline className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" aria-hidden="true" />
+          <IoLockClosedOutline
+            className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400"
+            aria-hidden="true"
+          />
           <input
             id="password"
             required

@@ -1,2 +1,2 @@
-export * from './automotive';
-export * from './product.inferface';
+export * from "./automotive";
+export * from "./product.inferface";

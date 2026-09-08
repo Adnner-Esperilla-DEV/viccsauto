@@ -44,7 +44,14 @@ function storageClient() {
 function extension(contentType: string, filename?: string) {
   const fromName = filename?.match(/\.([a-zA-Z0-9]{1,10})$/)?.[1]?.toLowerCase();
   if (fromName) return fromName === "jpeg" ? "jpg" : fromName;
-  return ({ "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "application/pdf": "pdf" } as Record<string, string>)[contentType] ?? "bin";
+  return (
+    (
+      { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "application/pdf": "pdf" } as Record<
+        string,
+        string
+      >
+    )[contentType] ?? "bin"
+  );
 }
 
 export function decodeDataImage(value: string) {
@@ -55,12 +62,14 @@ export function decodeDataImage(value: string) {
 
 export async function uploadObject({ body, contentType, filename, prefix }: UploadInput) {
   const key = `${prefix.replace(/^\/+|\/+$/g, "")}/${randomUUID()}.${extension(contentType, filename)}`;
-  await storageClient().send(new PutObjectCommand({
-    Bucket: bucketName(),
-    Body: body,
-    ContentType: contentType,
-    Key: key,
-  }));
+  await storageClient().send(
+    new PutObjectCommand({
+      Bucket: bucketName(),
+      Body: body,
+      ContentType: contentType,
+      Key: key,
+    }),
+  );
   return key;
 }
 

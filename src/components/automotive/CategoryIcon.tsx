@@ -1,4 +1,10 @@
-import { IoBatteryChargingOutline, IoCarSportOutline, IoFlashOutline, IoHardwareChipOutline, IoSettingsOutline } from "react-icons/io5";
+import {
+  IoBatteryChargingOutline,
+  IoCarSportOutline,
+  IoFlashOutline,
+  IoHardwareChipOutline,
+  IoSettingsOutline,
+} from "react-icons/io5";
 import type { AutomotiveProduct } from "@/interfaces";
 
 const icons = {

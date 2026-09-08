@@ -4,4 +4,98 @@ import { CategoryIcon, LogisticsServiceSection, PartCard, VehicleCard } from "@/
 import { listCategories, listProducts, listVehicles } from "@/lib/catalog-repository";
 
 export const dynamic = "force-dynamic";
-export default async function Home() { const [categories, products, vehicles] = await Promise.all([listCategories(), listProducts({ featured: true }), listVehicles(true)]); return <><section className="overflow-hidden bg-slate-950 text-white"><div className="mx-auto grid min-h-[620px] max-w-7xl items-center gap-10 px-6 py-20 lg:grid-cols-2"><div><span className="inline-flex rounded-full border border-blue-400/30 bg-blue-500/10 px-4 py-2 text-sm font-bold text-blue-300">Repuestos correctos. Compra segura.</span><h1 className="mt-7 text-5xl font-black leading-[1.05] tracking-tight sm:text-7xl">Todo para tu auto, <span className="text-blue-400">en un solo lugar.</span></h1><p className="mt-6 max-w-xl text-lg leading-8 text-slate-300">Autopartes verificadas por compatibilidad, vehículos seleccionados y asesoría local en Arica.</p><div className="mt-9 flex flex-wrap gap-4"><Link href="/products" className="inline-flex items-center gap-2 rounded-full bg-blue-600 px-6 py-3 font-bold">Buscar repuestos <IoArrowForward/></Link><Link href="/vehicles" className="rounded-full border border-white/20 px-6 py-3 font-bold">Ver vehículos</Link></div></div><div className="relative flex min-h-80 items-center justify-center rounded-[3rem] border border-white/10 bg-gradient-to-br from-blue-600/30 to-slate-900"><IoCarSportOutline className="h-52 w-52 text-blue-300"/></div></div></section><section className="mx-auto max-w-7xl px-6 py-20"><p className="font-bold uppercase tracking-widest text-blue-700">Encuentra más rápido</p><h2 className="mt-2 text-4xl font-black">Compra por categoría</h2><div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">{categories.map((category) => <Link key={category.slug} href={`/category/${category.slug}`} className="rounded-3xl border bg-white p-6 shadow-sm"><CategoryIcon name={category.icon} className="h-10 w-10 text-blue-700"/><h3 className="mt-5 text-xl font-bold">{category.name}</h3><p className="mt-2 text-sm text-slate-600">{category.description}</p></Link>)}</div></section><section className="mx-auto max-w-7xl px-6 pb-20"><p className="font-bold uppercase tracking-widest text-blue-700">Disponibles ahora</p><h2 className="mt-2 text-4xl font-black">Repuestos destacados</h2>{products.length ? <div className="mt-10 grid gap-7 sm:grid-cols-2 lg:grid-cols-3">{products.map((product) => <PartCard key={product.id} product={product}/>)}</div> : <p className="mt-6 text-slate-500">Pronto tendremos nuevos repuestos.</p>}</section><section className="bg-blue-50 py-20"><div className="mx-auto max-w-7xl px-6"><p className="font-bold uppercase tracking-widest text-blue-700">Selección ViccsAuto</p><h2 className="mt-2 text-4xl font-black">Vehículos destacados</h2><div className="mt-10 grid gap-7 lg:grid-cols-2">{vehicles.map((vehicle) => <VehicleCard key={vehicle.id} vehicle={vehicle}/>)}</div></div></section><LogisticsServiceSection/><section className="mx-auto grid max-w-7xl gap-5 px-6 py-20 md:grid-cols-3">{[[IoShieldCheckmarkOutline, "Compatibilidad verificada", "Confirma modelo, año y motor."], [IoTimeOutline, "Respuesta rápida", "Atención local en Arica."], [IoCarSportOutline, "Especialistas", "Autopartes y vehículos."]].map(([Icon, title, text]) => <div key={String(title)} className="rounded-3xl bg-white p-7"><Icon className="h-9 w-9 text-blue-700"/><h3 className="mt-4 text-xl font-bold">{String(title)}</h3><p className="mt-2 text-slate-600">{String(text)}</p></div>)}</section></>; }
+export default async function Home() {
+  const [categories, products, vehicles] = await Promise.all([
+    listCategories(),
+    listProducts({ featured: true }),
+    listVehicles(true),
+  ]);
+  return (
+    <>
+      <section className="overflow-hidden bg-slate-950 text-white">
+        <div className="mx-auto grid min-h-[620px] max-w-7xl items-center gap-10 px-6 py-20 lg:grid-cols-2">
+          <div>
+            <span className="inline-flex rounded-full border border-blue-400/30 bg-blue-500/10 px-4 py-2 text-sm font-bold text-blue-300">
+              Repuestos correctos. Compra segura.
+            </span>
+            <h1 className="mt-7 text-5xl font-black leading-[1.05] tracking-tight sm:text-7xl">
+              Todo para tu auto, <span className="text-blue-400">en un solo lugar.</span>
+            </h1>
+            <p className="mt-6 max-w-xl text-lg leading-8 text-slate-300">
+              Autopartes verificadas por compatibilidad, vehículos seleccionados y asesoría local en Arica.
+            </p>
+            <div className="mt-9 flex flex-wrap gap-4">
+              <Link
+                href="/products"
+                className="inline-flex items-center gap-2 rounded-full bg-blue-600 px-6 py-3 font-bold"
+              >
+                Buscar repuestos <IoArrowForward />
+              </Link>
+              <Link href="/vehicles" className="rounded-full border border-white/20 px-6 py-3 font-bold">
+                Ver vehículos
+              </Link>
+            </div>
+          </div>
+          <div className="relative flex min-h-80 items-center justify-center rounded-[3rem] border border-white/10 bg-gradient-to-br from-blue-600/30 to-slate-900">
+            <IoCarSportOutline className="h-52 w-52 text-blue-300" />
+          </div>
+        </div>
+      </section>
+      <section className="mx-auto max-w-7xl px-6 py-20">
+        <p className="font-bold uppercase tracking-widest text-blue-700">Encuentra más rápido</p>
+        <h2 className="mt-2 text-4xl font-black">Compra por categoría</h2>
+        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          {categories.map((category) => (
+            <Link
+              key={category.slug}
+              href={`/category/${category.slug}`}
+              className="rounded-3xl border bg-white p-6 shadow-sm"
+            >
+              <CategoryIcon name={category.icon} className="h-10 w-10 text-blue-700" />
+              <h3 className="mt-5 text-xl font-bold">{category.name}</h3>
+              <p className="mt-2 text-sm text-slate-600">{category.description}</p>
+            </Link>
+          ))}
+        </div>
+      </section>
+      <section className="mx-auto max-w-7xl px-6 pb-20">
+        <p className="font-bold uppercase tracking-widest text-blue-700">Disponibles ahora</p>
+        <h2 className="mt-2 text-4xl font-black">Repuestos destacados</h2>
+        {products.length ? (
+          <div className="mt-10 grid gap-7 sm:grid-cols-2 lg:grid-cols-3">
+            {products.map((product) => (
+              <PartCard key={product.id} product={product} />
+            ))}
+          </div>
+        ) : (
+          <p className="mt-6 text-slate-500">Pronto tendremos nuevos repuestos.</p>
+        )}
+      </section>
+      <section className="bg-blue-50 py-20">
+        <div className="mx-auto max-w-7xl px-6">
+          <p className="font-bold uppercase tracking-widest text-blue-700">Selección ViccsAuto</p>
+          <h2 className="mt-2 text-4xl font-black">Vehículos destacados</h2>
+          <div className="mt-10 grid gap-7 lg:grid-cols-2">
+            {vehicles.map((vehicle) => (
+              <VehicleCard key={vehicle.id} vehicle={vehicle} />
+            ))}
+          </div>
+        </div>
+      </section>
+      <LogisticsServiceSection />
+      <section className="mx-auto grid max-w-7xl gap-5 px-6 py-20 md:grid-cols-3">
+        {[
+          [IoShieldCheckmarkOutline, "Compatibilidad verificada", "Confirma modelo, año y motor."],
+          [IoTimeOutline, "Respuesta rápida", "Atención local en Arica."],
+          [IoCarSportOutline, "Especialistas", "Autopartes y vehículos."],
+        ].map(([Icon, title, text]) => (
+          <div key={String(title)} className="rounded-3xl bg-white p-7">
+            <Icon className="h-9 w-9 text-blue-700" />
+            <h3 className="mt-4 text-xl font-bold">{String(title)}</h3>
+            <p className="mt-2 text-slate-600">{String(text)}</p>
+          </div>
+        ))}
+      </section>
+    </>
+  );
+}

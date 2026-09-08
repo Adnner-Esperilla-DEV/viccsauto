@@ -16,7 +16,9 @@ export async function addToCartAction(formData: FormData) {
   if (!product || product.stock < parsed.data.quantity) redirect(`/products?error=stock`);
   const user = await getSessionUser();
   const cart = await getOrCreateCart(user?.id);
-  const current = await db.cartItem.findUnique({ where: { cartId_productId: { cartId: cart.id, productId: product.id } } });
+  const current = await db.cartItem.findUnique({
+    where: { cartId_productId: { cartId: cart.id, productId: product.id } },
+  });
   const quantity = (current?.quantity ?? 0) + parsed.data.quantity;
   if (quantity > product.stock || quantity > 25) redirect(`/product/${product.slug}?error=stock`);
   await db.cartItem.upsert({
@@ -29,7 +31,9 @@ export async function addToCartAction(formData: FormData) {
 }
 
 export async function updateCartItemAction(formData: FormData) {
-  const parsed = z.object({ itemId: z.string(), quantity: z.coerce.number().int().min(0).max(25) }).safeParse(Object.fromEntries(formData));
+  const parsed = z
+    .object({ itemId: z.string(), quantity: z.coerce.number().int().min(0).max(25) })
+    .safeParse(Object.fromEntries(formData));
   if (!parsed.success) redirect("/cart?error=quantity");
   const cart = await readCart();
   const item = cart?.items.find((candidate) => candidate.id === parsed.data.itemId);
@@ -38,7 +42,10 @@ export async function updateCartItemAction(formData: FormData) {
   else {
     const product = await db.product.findUnique({ where: { id: item.productId } });
     if (!product || product.stock < parsed.data.quantity) redirect("/cart?error=stock");
-    await db.cartItem.update({ where: { id: item.id }, data: { quantity: parsed.data.quantity, unitPrice: product.price } });
+    await db.cartItem.update({
+      where: { id: item.id },
+      data: { quantity: parsed.data.quantity, unitPrice: product.price },
+    });
   }
   revalidatePath("/cart");
   redirect("/cart");
@@ -47,7 +54,8 @@ export async function updateCartItemAction(formData: FormData) {
 export async function removeCartItemAction(formData: FormData) {
   const id = z.string().safeParse(formData.get("itemId"));
   const cart = await readCart();
-  if (id.success && cart?.items.some((item) => item.id === id.data)) await db.cartItem.delete({ where: { id: id.data } });
+  if (id.success && cart?.items.some((item) => item.id === id.data))
+    await db.cartItem.delete({ where: { id: id.data } });
   revalidatePath("/cart");
   redirect("/cart");
 }

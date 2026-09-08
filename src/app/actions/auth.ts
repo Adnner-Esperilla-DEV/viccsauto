@@ -15,7 +15,12 @@ const registration = credentials.extend({
   confirmPassword: z.string().min(8).max(128),
   firstName: z.string().trim().min(2).max(60),
   lastName: z.string().trim().min(2).max(60),
-  phone: z.string().trim().max(30).refine((value) => !value || (normalizeCustomerPhone(value)?.length ?? 0) >= 8).optional(),
+  phone: z
+    .string()
+    .trim()
+    .max(30)
+    .refine((value) => !value || (normalizeCustomerPhone(value)?.length ?? 0) >= 8)
+    .optional(),
 });
 
 async function clientKey(scope: string) {
@@ -49,7 +54,8 @@ export async function registerAction(formData: FormData) {
   ]);
   if (byEmail && byPhone && byEmail.id !== byPhone.id) redirect("/auth/new-account?error=unavailable");
   const existing = byEmail ?? byPhone;
-  if (existing && (existing.role !== "CUSTOMER" || existing.status !== "POS_ONLY")) redirect("/auth/new-account?error=unavailable");
+  if (existing && (existing.role !== "CUSTOMER" || existing.status !== "POS_ONLY"))
+    redirect("/auth/new-account?error=unavailable");
 
   const passwordHash = await hash(password, 12);
   const user = existing
@@ -71,12 +77,15 @@ export async function logoutAction() {
 
 export async function requestPasswordResetAction(formData: FormData) {
   const parsed = z.string().trim().toLowerCase().email().safeParse(formData.get("email"));
-  if (parsed.success && await memoryRateLimit.consume(await clientKey("reset"), 4, 60 * 60_000)) {
+  if (parsed.success && (await memoryRateLimit.consume(await clientKey("reset"), 4, 60 * 60_000))) {
     const user = await db.user.findUnique({ where: { email: parsed.data } });
     if (user) {
       const token = randomBytes(32).toString("base64url");
-      await db.passwordResetToken.create({ data: { userId: user.id, tokenHash: hashToken(token), expiresAt: new Date(Date.now() + 30 * 60_000) } });
-      if (process.env.NODE_ENV === "development") console.info(`[password reset sandbox] token generated for ${user.id}`);
+      await db.passwordResetToken.create({
+        data: { userId: user.id, tokenHash: hashToken(token), expiresAt: new Date(Date.now() + 30 * 60_000) },
+      });
+      if (process.env.NODE_ENV === "development")
+        console.info(`[password reset sandbox] token generated for ${user.id}`);
     }
   }
   redirect("/auth/forgot-password?sent=1");

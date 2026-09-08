@@ -8,7 +8,13 @@ import { getImportFinanceSummary } from "../src/lib/import-finances";
 const items = [{ unitPrice: 100_000, quantity: 1 }];
 
 test("venta presencial en Arica no cobra envío ni tributos", () => {
-  assert.deepEqual(calculateTotals(items, "PICKUP_ARICA"), { subtotal: 100_000, shippingTotal: 0, discountTotal: 0, taxTotal: 0, total: 100_000 });
+  assert.deepEqual(calculateTotals(items, "PICKUP_ARICA"), {
+    subtotal: 100_000,
+    shippingTotal: 0,
+    discountTotal: 0,
+    taxTotal: 0,
+    total: 100_000,
+  });
 });
 
 test("despacho en Arica es gratuito y sin tributos adicionales", () => {
@@ -16,7 +22,13 @@ test("despacho en Arica es gratuito y sin tributos adicionales", () => {
 });
 
 test("Iquique no suma transporte ni tributos al total cobrado", () => {
-  assert.deepEqual(calculateTotals(items, "IQUIQUE"), { subtotal: 100_000, shippingTotal: 0, discountTotal: 0, taxTotal: 0, total: 100_000 });
+  assert.deepEqual(calculateTotals(items, "IQUIQUE"), {
+    subtotal: 100_000,
+    shippingTotal: 0,
+    discountTotal: 0,
+    taxTotal: 0,
+    total: 100_000,
+  });
 });
 
 test("resto de Chile aplica la tasa configurable de internación", () => {
@@ -37,21 +49,52 @@ test("impide saltos inválidos de estado", () => {
 });
 
 test("una importación de repuestos suma piezas, envío y servicio logístico", () => {
-  const summary = getImportFinanceSummary({ importType: "PARTS", valueUsd: 215, towingCostUsd: 0, oceanFreightUsd: 0, shippingCostUsd: 120, logisticsServiceUsd: 75, paidAmountUsd: 200 });
+  const summary = getImportFinanceSummary({
+    importType: "PARTS",
+    valueUsd: 215,
+    towingCostUsd: 0,
+    oceanFreightUsd: 0,
+    shippingCostUsd: 120,
+    logisticsServiceUsd: 75,
+    paidAmountUsd: 200,
+  });
   assert.equal(summary.totalUsd, 410);
   assert.equal(summary.balanceUsd, 210);
   assert.equal(summary.paymentStatus, "PARTIAL");
 });
 
 test("una importación de vehículo conserva el valor del vehículo fuera del total", () => {
-  const summary = getImportFinanceSummary({ importType: "VEHICLE", valueUsd: 10_000, towingCostUsd: 300, oceanFreightUsd: 900, shippingCostUsd: 500, logisticsServiceUsd: 200, paidAmountUsd: 0 });
+  const summary = getImportFinanceSummary({
+    importType: "VEHICLE",
+    valueUsd: 10_000,
+    towingCostUsd: 300,
+    oceanFreightUsd: 900,
+    shippingCostUsd: 500,
+    logisticsServiceUsd: 200,
+    paidAmountUsd: 0,
+  });
   assert.equal(summary.totalUsd, 1_200);
   assert.equal(summary.balanceUsd, 1_200);
 });
 
 test("otros cargos son opcionales y se suman al total de cualquier importación", () => {
-  const vehicle = getImportFinanceSummary({ importType: "VEHICLE", towingCostUsd: 300, oceanFreightUsd: 900, otherChargesUsd: 125.5, paidAmountUsd: 0 });
-  const parts = getImportFinanceSummary({ importType: "PARTS", valueUsd: 215, towingCostUsd: 0, oceanFreightUsd: 0, shippingCostUsd: 120, logisticsServiceUsd: 75, otherChargesUsd: 25, paidAmountUsd: 0 });
+  const vehicle = getImportFinanceSummary({
+    importType: "VEHICLE",
+    towingCostUsd: 300,
+    oceanFreightUsd: 900,
+    otherChargesUsd: 125.5,
+    paidAmountUsd: 0,
+  });
+  const parts = getImportFinanceSummary({
+    importType: "PARTS",
+    valueUsd: 215,
+    towingCostUsd: 0,
+    oceanFreightUsd: 0,
+    shippingCostUsd: 120,
+    logisticsServiceUsd: 75,
+    otherChargesUsd: 25,
+    paidAmountUsd: 0,
+  });
   assert.equal(vehicle.totalUsd, 1_325.5);
   assert.equal(parts.totalUsd, 435);
 });

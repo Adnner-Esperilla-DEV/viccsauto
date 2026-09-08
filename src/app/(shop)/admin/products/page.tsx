@@ -1,6 +1,14 @@
 import type { Prisma } from "@prisma/client";
 import Link from "next/link";
-import { IoCarSportOutline, IoChevronBackOutline, IoChevronForwardOutline, IoEyeOffOutline, IoEyeOutline, IoImageOutline, IoSearchOutline } from "react-icons/io5";
+import {
+  IoCarSportOutline,
+  IoChevronBackOutline,
+  IoChevronForwardOutline,
+  IoEyeOffOutline,
+  IoEyeOutline,
+  IoImageOutline,
+  IoSearchOutline,
+} from "react-icons/io5";
 
 import { toggleProductAction } from "@/app/actions/admin";
 import { ProductCompatibilityModal } from "@/components/admin/ProductCompatibilityModal";
@@ -93,20 +101,34 @@ export default async function ProductsAdminPage({ searchParams }: ProductsAdminP
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
     }),
-    query.compat ? db.product.findUnique({
-      where: { id: query.compat },
-      select: {
-        id: true,
-        name: true,
-        sku: true,
-        compatibility: {
-          include: { vehicleModel: { include: { make: true } } },
-          orderBy: [{ vehicleModel: { make: { name: "asc" } } }, { vehicleModel: { name: "asc" } }, { yearFrom: "asc" }],
-        },
-      },
-    }) : Promise.resolve(null),
-    query.compat ? db.vehicleYear.findMany({ where: { isActive: true }, orderBy: { year: "desc" }, select: { year: true } }) : Promise.resolve([]),
-    query.compat ? db.vehicleMake.findMany({ where: { isActive: true, models: { some: { isActive: true } } }, orderBy: { name: "asc" }, select: { id: true, name: true } }) : Promise.resolve([]),
+    query.compat
+      ? db.product.findUnique({
+          where: { id: query.compat },
+          select: {
+            id: true,
+            name: true,
+            sku: true,
+            compatibility: {
+              include: { vehicleModel: { include: { make: true } } },
+              orderBy: [
+                { vehicleModel: { make: { name: "asc" } } },
+                { vehicleModel: { name: "asc" } },
+                { yearFrom: "asc" },
+              ],
+            },
+          },
+        })
+      : Promise.resolve(null),
+    query.compat
+      ? db.vehicleYear.findMany({ where: { isActive: true }, orderBy: { year: "desc" }, select: { year: true } })
+      : Promise.resolve([]),
+    query.compat
+      ? db.vehicleMake.findMany({
+          where: { isActive: true, models: { some: { isActive: true } } },
+          orderBy: { name: "asc" },
+          select: { id: true, name: true },
+        })
+      : Promise.resolve([]),
   ]);
 
   function pageHref(nextPage: number) {
@@ -136,22 +158,51 @@ export default async function ProductsAdminPage({ searchParams }: ProductsAdminP
         <div>
           <p className="text-sm font-bold uppercase tracking-[0.18em] text-blue-700">Administración</p>
           <h1 className="mt-2 text-4xl font-black text-slate-950">Productos</h1>
-          <p className="mt-3 max-w-2xl font-normal text-slate-600">Gestiona catálogos grandes, inventario, visibilidad y compatibilidad vehicular.</p>
+          <p className="mt-3 max-w-2xl font-normal text-slate-600">
+            Gestiona catálogos grandes, inventario, visibilidad y compatibilidad vehicular.
+          </p>
         </div>
-        <ProductCreateModal brands={brands} categories={categories} initialOpen={Boolean(creationError)} serverError={creationError} />
+        <ProductCreateModal
+          brands={brands}
+          categories={categories}
+          initialOpen={Boolean(creationError)}
+          serverError={creationError}
+        />
       </div>
 
-      {errorMessage && <p role="alert" className="mt-6 rounded-2xl border border-red-100 bg-red-50 p-4 text-sm font-semibold text-red-700">{errorMessage}</p>}
-      {query.ok === "created" && <p className="mt-6 rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-sm font-semibold text-emerald-800">Producto creado correctamente.</p>}
-      {query.ok === "updated" && <p className="mt-6 rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-sm font-semibold text-emerald-800">Producto actualizado correctamente.</p>}
-      {query.ok === "deleted" && <p className="mt-6 rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-sm font-semibold text-emerald-800">Producto eliminado correctamente.</p>}
+      {errorMessage && (
+        <p
+          role="alert"
+          className="mt-6 rounded-2xl border border-red-100 bg-red-50 p-4 text-sm font-semibold text-red-700"
+        >
+          {errorMessage}
+        </p>
+      )}
+      {query.ok === "created" && (
+        <p className="mt-6 rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-sm font-semibold text-emerald-800">
+          Producto creado correctamente.
+        </p>
+      )}
+      {query.ok === "updated" && (
+        <p className="mt-6 rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-sm font-semibold text-emerald-800">
+          Producto actualizado correctamente.
+        </p>
+      )}
+      {query.ok === "deleted" && (
+        <p className="mt-6 rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-sm font-semibold text-emerald-800">
+          Producto eliminado correctamente.
+        </p>
+      )}
 
       <section className="mt-8 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 p-5 sm:p-6">
           <form className="flex w-full max-w-2xl gap-2" role="search">
             <label className="relative min-w-0 flex-1">
               <span className="sr-only">Buscar productos</span>
-              <IoSearchOutline className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" aria-hidden="true" />
+              <IoSearchOutline
+                className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400"
+                aria-hidden="true"
+              />
               <input
                 name="q"
                 defaultValue={search}
@@ -159,10 +210,21 @@ export default async function ProductsAdminPage({ searchParams }: ProductsAdminP
                 className="w-full rounded-xl border border-slate-300 py-3 pl-11 pr-4 text-sm outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-100"
               />
             </label>
-            <button className="rounded-xl bg-slate-950 px-5 py-3 text-sm font-bold text-white hover:bg-slate-800">Buscar</button>
-            {search && <Link href="/admin/products" className="grid place-items-center rounded-xl border border-slate-300 px-4 text-sm font-bold text-slate-600 hover:bg-slate-50">Limpiar</Link>}
+            <button className="rounded-xl bg-slate-950 px-5 py-3 text-sm font-bold text-white hover:bg-slate-800">
+              Buscar
+            </button>
+            {search && (
+              <Link
+                href="/admin/products"
+                className="grid place-items-center rounded-xl border border-slate-300 px-4 text-sm font-bold text-slate-600 hover:bg-slate-50"
+              >
+                Limpiar
+              </Link>
+            )}
           </form>
-          <p className="text-sm font-normal text-slate-500"><b className="text-slate-900">{total}</b> productos</p>
+          <p className="text-sm font-normal text-slate-500">
+            <b className="text-slate-900">{total}</b> productos
+          </p>
         </div>
 
         <div className="overflow-x-auto">
@@ -185,9 +247,16 @@ export default async function ProductsAdminPage({ searchParams }: ProductsAdminP
                   <td className="px-6 py-3">
                     {product.images[0] ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={`/api/product-images/${product.images[0].id}`} alt={product.images[0].alt} className="h-12 w-16 rounded-xl border border-slate-200 bg-white object-contain" />
+                      <img
+                        src={`/api/product-images/${product.images[0].id}`}
+                        alt={product.images[0].alt}
+                        className="h-12 w-16 rounded-xl border border-slate-200 bg-white object-contain"
+                      />
                     ) : (
-                      <span className="grid h-12 w-16 place-items-center rounded-xl border border-dashed border-slate-300 bg-slate-50 text-slate-400" title="Sin imagen">
+                      <span
+                        className="grid h-12 w-16 place-items-center rounded-xl border border-dashed border-slate-300 bg-slate-50 text-slate-400"
+                        title="Sin imagen"
+                      >
                         <IoImageOutline className="h-5 w-5" aria-hidden="true" />
                       </span>
                     )}
@@ -195,7 +264,9 @@ export default async function ProductsAdminPage({ searchParams }: ProductsAdminP
                   <td className="px-4 py-3 font-mono text-xs font-semibold text-slate-600">{product.sku}</td>
                   <td className="min-w-[260px] max-w-md px-4 py-3">
                     <b className="block truncate text-slate-950">{product.name}</b>
-                    <span className="mt-1 block truncate text-xs text-slate-500">{product.brand?.name ?? "Sin marca"} · {product.category.name}</span>
+                    <span className="mt-1 block truncate text-xs text-slate-500">
+                      {product.brand?.name ?? "Sin marca"} · {product.category.name}
+                    </span>
                   </td>
                   <td className="whitespace-nowrap px-4 py-3">
                     <span className="block font-semibold">{formatPrice(product.price)}</span>
@@ -205,12 +276,28 @@ export default async function ProductsAdminPage({ searchParams }: ProductsAdminP
                       </span>
                     )}
                   </td>
-                  <td className="px-4 py-3"><span className={product.stock <= product.lowStockAt ? "font-bold text-amber-700" : "text-slate-700"}>{product.stock}</span></td>
                   <td className="px-4 py-3">
-                    {product.featured && product.images.length ? <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">Destacado</span> : <span className="text-xs text-slate-400">No</span>}
+                    <span
+                      className={product.stock <= product.lowStockAt ? "font-bold text-amber-700" : "text-slate-700"}
+                    >
+                      {product.stock}
+                    </span>
                   </td>
                   <td className="px-4 py-3">
-                    <span className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${product.isActive ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>{product.isActive ? "Activo" : "Inactivo"}</span>
+                    {product.featured && product.images.length ? (
+                      <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">
+                        Destacado
+                      </span>
+                    ) : (
+                      <span className="text-xs text-slate-400">No</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    <span
+                      className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${product.isActive ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"}`}
+                    >
+                      {product.isActive ? "Activo" : "Inactivo"}
+                    </span>
                   </td>
                   <td className="px-6 py-3">
                     <div className="flex flex-wrap items-center justify-end gap-2">
@@ -239,17 +326,30 @@ export default async function ProductsAdminPage({ searchParams }: ProductsAdminP
                           oemCodes: oemText(product.oemCodes),
                           featured: product.featured,
                           isActive: product.isActive,
-                          images: product.images.map((image) => ({ id: image.id, url: `/api/product-images/${image.id}` })),
+                          images: product.images.map((image) => ({
+                            id: image.id,
+                            url: `/api/product-images/${image.id}`,
+                          })),
                         }}
                       />
-                      <Link href={compatibilityHref(product.id)} className="inline-flex items-center gap-1.5 rounded-lg border border-violet-200 bg-violet-50 px-3 py-2 text-xs font-bold text-violet-700 transition hover:bg-violet-100">
-                        <IoCarSportOutline className="h-4 w-4" aria-hidden="true" /> Compatibilidad ({product._count.compatibility})
+                      <Link
+                        href={compatibilityHref(product.id)}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-violet-200 bg-violet-50 px-3 py-2 text-xs font-bold text-violet-700 transition hover:bg-violet-100"
+                      >
+                        <IoCarSportOutline className="h-4 w-4" aria-hidden="true" /> Compatibilidad (
+                        {product._count.compatibility})
                       </Link>
                       <form action={toggleProductAction}>
                         <input type="hidden" name="id" value={product.id} />
                         <input type="hidden" name="active" value={String(!product.isActive)} />
-                        <button className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-bold transition ${product.isActive ? "border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100" : "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"}`}>
-                          {product.isActive ? <IoEyeOffOutline className="h-4 w-4" aria-hidden="true" /> : <IoEyeOutline className="h-4 w-4" aria-hidden="true" />}
+                        <button
+                          className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-bold transition ${product.isActive ? "border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100" : "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"}`}
+                        >
+                          {product.isActive ? (
+                            <IoEyeOffOutline className="h-4 w-4" aria-hidden="true" />
+                          ) : (
+                            <IoEyeOutline className="h-4 w-4" aria-hidden="true" />
+                          )}
                           {product.isActive ? "Desactivar" : "Activar"}
                         </button>
                       </form>
@@ -271,7 +371,9 @@ export default async function ProductsAdminPage({ searchParams }: ProductsAdminP
         </div>
 
         <footer className="flex flex-wrap items-center justify-between gap-4 border-t border-slate-200 px-6 py-4">
-          <p className="text-sm font-normal text-slate-500">Mostrando {firstResult}–{lastResult} de {total}</p>
+          <p className="text-sm font-normal text-slate-500">
+            Mostrando {firstResult}–{lastResult} de {total}
+          </p>
           <nav className="flex items-center gap-2" aria-label="Paginación de productos">
             <Link
               href={pageHref(Math.max(1, page - 1))}
@@ -280,7 +382,9 @@ export default async function ProductsAdminPage({ searchParams }: ProductsAdminP
             >
               <IoChevronBackOutline aria-hidden="true" /> Anterior
             </Link>
-            <span className="px-2 text-sm font-semibold text-slate-600">Página {page} de {totalPages}</span>
+            <span className="px-2 text-sm font-semibold text-slate-600">
+              Página {page} de {totalPages}
+            </span>
             <Link
               href={pageHref(Math.min(totalPages, page + 1))}
               aria-disabled={page === totalPages}

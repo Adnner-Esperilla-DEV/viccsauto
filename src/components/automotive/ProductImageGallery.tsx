@@ -2,7 +2,15 @@
 
 import { useState } from "react";
 
-export function ProductImageGallery({ images, name, type = "producto" }: { images: string[]; name: string; type?: "producto" | "vehículo" }) {
+export function ProductImageGallery({
+  images,
+  name,
+  type = "producto",
+}: {
+  images: string[];
+  name: string;
+  type?: "producto" | "vehículo";
+}) {
   const [selected, setSelected] = useState(0);
   const activeImage = images[selected] ?? images[0];
 

@@ -5,4 +5,6 @@ export const orderTransitions: Record<string, readonly string[]> = {
   COMPLETED: [],
   CANCELLED: [],
 };
-export function canTransitionOrder(from: string, to: string) { return from === to || Boolean(orderTransitions[from]?.includes(to)); }
+export function canTransitionOrder(from: string, to: string) {
+  return from === to || Boolean(orderTransitions[from]?.includes(to));
+}

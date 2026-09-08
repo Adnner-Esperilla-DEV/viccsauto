@@ -31,17 +31,22 @@ function convertedClp(priceUsd: string, usdToClpRate: string) {
   return parsedPriceUsd && parsedRate ? Math.round(parsedPriceUsd * parsedRate) : null;
 }
 
-export function ProductCurrencyFields({ defaultPriceUsd, defaultUsdToClpRate, onConversionChange }: ProductCurrencyFieldsProps) {
+export function ProductCurrencyFields({
+  defaultPriceUsd,
+  defaultUsdToClpRate,
+  onConversionChange,
+}: ProductCurrencyFieldsProps) {
   const [priceUsd, setPriceUsd] = useState(defaultPriceUsd?.toString() ?? "");
   const [usdToClpRate, setUsdToClpRate] = useState(defaultUsdToClpRate?.toString() ?? "");
   const parsedPriceUsd = positiveNumber(priceUsd);
   const parsedRate = positiveNumber(usdToClpRate);
   const estimatedClp = useMemo(
-    () => parsedPriceUsd && parsedRate ? Math.round(parsedPriceUsd * parsedRate) : null,
+    () => (parsedPriceUsd && parsedRate ? Math.round(parsedPriceUsd * parsedRate) : null),
     [parsedPriceUsd, parsedRate],
   );
   const requiresPair = Boolean(priceUsd || usdToClpRate);
-  const inputClass = "rounded-xl border border-slate-300 bg-white px-4 py-3 font-normal outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-100";
+  const inputClass =
+    "rounded-xl border border-slate-300 bg-white px-4 py-3 font-normal outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-100";
 
   function changePriceUsd(nextValue: string) {
     setPriceUsd(nextValue);
@@ -97,10 +102,13 @@ export function ProductCurrencyFields({ defaultPriceUsd, defaultUsdToClpRate, on
       </div>
       {estimatedClp !== null ? (
         <p className="mt-4 rounded-xl bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm">
-          {usdFormatter.format(parsedPriceUsd!)} × {parsedRate!.toLocaleString("es-CL", { maximumFractionDigits: 4 })} = <b className="text-blue-800">{clpFormatter.format(estimatedClp)} sugeridos</b>
+          {usdFormatter.format(parsedPriceUsd!)} × {parsedRate!.toLocaleString("es-CL", { maximumFractionDigits: 4 })} ={" "}
+          <b className="text-blue-800">{clpFormatter.format(estimatedClp)} sugeridos</b>
         </p>
       ) : (
-        <p className="mt-3 text-xs font-normal text-slate-500">Completa ambos campos para ver la conversión estimada.</p>
+        <p className="mt-3 text-xs font-normal text-slate-500">
+          Completa ambos campos para ver la conversión estimada.
+        </p>
       )}
     </fieldset>
   );

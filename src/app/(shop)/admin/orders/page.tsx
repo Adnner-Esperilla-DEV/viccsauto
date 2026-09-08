@@ -73,7 +73,12 @@ export default async function OrdersAdminPage({ searchParams }: OrdersAdminPageP
           <h1 className="mt-2 text-4xl font-black">Pedidos</h1>
           <p className="mt-2 text-sm text-slate-500">{total} pedidos registrados · 15 por página</p>
         </div>
-        <a href="/admin/reports/orders" className="rounded-full border border-slate-300 bg-white px-5 py-2.5 font-bold text-slate-700 shadow-sm hover:border-blue-300 hover:text-blue-700">Exportar CSV</a>
+        <a
+          href="/admin/reports/orders"
+          className="rounded-full border border-slate-300 bg-white px-5 py-2.5 font-bold text-slate-700 shadow-sm hover:border-blue-300 hover:text-blue-700"
+        >
+          Exportar CSV
+        </a>
       </div>
 
       <div className="mt-8 space-y-4">
@@ -82,31 +87,71 @@ export default async function OrdersAdminPage({ searchParams }: OrdersAdminPageP
             <div className="flex flex-wrap justify-between gap-4">
               <div>
                 <div className="flex items-center gap-2">
-                  <Link href={`/orders/${order.id}`} className="font-bold hover:text-blue-700 hover:underline">{order.number}</Link>
-                  <span className={order.channel === "POS" ? "rounded-full bg-violet-50 px-2 py-0.5 text-xs font-bold text-violet-700" : "rounded-full bg-blue-50 px-2 py-0.5 text-xs font-bold text-blue-700"}>
+                  <Link href={`/orders/${order.id}`} className="font-bold hover:text-blue-700 hover:underline">
+                    {order.number}
+                  </Link>
+                  <span
+                    className={
+                      order.channel === "POS"
+                        ? "rounded-full bg-violet-50 px-2 py-0.5 text-xs font-bold text-violet-700"
+                        : "rounded-full bg-blue-50 px-2 py-0.5 text-xs font-bold text-blue-700"
+                    }
+                  >
                     {order.channel === "POS" ? "PRESENCIAL" : "EN LÍNEA"}
                   </span>
                 </div>
-                <small className="mt-1 block text-slate-500">{order.customerName} · {order.customerEmail}</small>
+                <small className="mt-1 block text-slate-500">
+                  {order.customerName} · {order.customerEmail}
+                </small>
                 <span className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-slate-500">
                   <IoCalendarOutline className="h-4 w-4" aria-hidden="true" />
                   {orderDate(order.createdAt)}
                 </span>
               </div>
-              <div className="text-right"><strong className="text-xl text-slate-950">{formatPrice(order.total)}</strong><small className="mt-1 block text-slate-500">Subtotal {formatPrice(order.subtotal)} · Tributos {formatPrice(order.taxTotal)}</small></div>
+              <div className="text-right">
+                <strong className="text-xl text-slate-950">{formatPrice(order.total)}</strong>
+                <small className="mt-1 block text-slate-500">
+                  Subtotal {formatPrice(order.subtotal)} · Tributos {formatPrice(order.taxTotal)}
+                </small>
+              </div>
             </div>
 
-            <form action={updateOrderAction} className="mt-6 grid items-end gap-4 md:grid-cols-2 xl:grid-cols-[1fr_1fr_1.25fr_1fr_auto]">
+            <form
+              action={updateOrderAction}
+              className="mt-6 grid items-end gap-4 md:grid-cols-2 xl:grid-cols-[1fr_1fr_1.25fr_1fr_auto]"
+            >
               <input type="hidden" name="id" value={order.id} />
               <input type="hidden" name="returnPage" value={page} />
-              <AdminSelect name="status" label="Estado del pedido" defaultValue={order.status} options={orderStatuses} />
-              <AdminSelect name="paymentStatus" label="Estado del pago" defaultValue={order.paymentStatus} options={paymentStatuses} />
-              <AdminSelect name="fulfillmentStatus" label="Estado de entrega" defaultValue={order.fulfillmentStatus} options={fulfillmentStatuses} />
+              <AdminSelect
+                name="status"
+                label="Estado del pedido"
+                defaultValue={order.status}
+                options={orderStatuses}
+              />
+              <AdminSelect
+                name="paymentStatus"
+                label="Estado del pago"
+                defaultValue={order.paymentStatus}
+                options={paymentStatuses}
+              />
+              <AdminSelect
+                name="fulfillmentStatus"
+                label="Estado de entrega"
+                defaultValue={order.fulfillmentStatus}
+                options={fulfillmentStatuses}
+              />
               <label className="grid gap-2">
                 <span className="text-xs font-bold uppercase tracking-wide text-slate-500">Código de seguimiento</span>
-                <input name="trackingCode" defaultValue={order.shipments[0]?.trackingCode ?? ""} placeholder="Ej. CH123456789" className="min-h-11 rounded-xl border border-slate-300 px-4 py-2.5 text-sm outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-100" />
+                <input
+                  name="trackingCode"
+                  defaultValue={order.shipments[0]?.trackingCode ?? ""}
+                  placeholder="Ej. CH123456789"
+                  className="min-h-11 rounded-xl border border-slate-300 px-4 py-2.5 text-sm outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-100"
+                />
               </label>
-              <button className="min-h-11 rounded-xl bg-blue-700 px-5 py-2.5 font-bold text-white shadow-sm hover:bg-blue-800">Actualizar</button>
+              <button className="min-h-11 rounded-xl bg-blue-700 px-5 py-2.5 font-bold text-white shadow-sm hover:bg-blue-800">
+                Actualizar
+              </button>
             </form>
           </article>
         ))}
@@ -119,7 +164,9 @@ export default async function OrdersAdminPage({ searchParams }: OrdersAdminPageP
       </div>
 
       <footer className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
-        <p className="text-sm text-slate-500">Mostrando {firstResult}–{lastResult} de {total}</p>
+        <p className="text-sm text-slate-500">
+          Mostrando {firstResult}–{lastResult} de {total}
+        </p>
         <nav className="flex items-center gap-2" aria-label="Paginación de pedidos">
           <Link
             href={pageHref(Math.max(1, page - 1))}
@@ -128,7 +175,9 @@ export default async function OrdersAdminPage({ searchParams }: OrdersAdminPageP
           >
             <IoChevronBackOutline aria-hidden="true" /> Anterior
           </Link>
-          <span className="px-2 text-sm font-semibold text-slate-600">Página {page} de {totalPages}</span>
+          <span className="px-2 text-sm font-semibold text-slate-600">
+            Página {page} de {totalPages}
+          </span>
           <Link
             href={pageHref(Math.min(totalPages, page + 1))}
             aria-disabled={page === totalPages}

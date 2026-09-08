@@ -15,11 +15,7 @@ export const metadata: Metadata = {
   description: "Accede a tu cuenta de ViccsAuto para revisar pedidos y datos de compra.",
 };
 
-export default async function LoginPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ error?: string }>;
-}) {
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
   const { error } = await searchParams;
 
   return (
@@ -29,7 +25,10 @@ export default async function LoginPage({
           <div className="absolute -left-24 top-1/4 h-80 w-80 rounded-full bg-blue-50 blur-3xl" aria-hidden="true" />
           <div className="absolute -right-28 bottom-0 h-96 w-96 rounded-full bg-sky-50 blur-3xl" aria-hidden="true" />
 
-          <Link href="/" className="relative inline-flex w-fit items-center gap-2 text-2xl font-black tracking-tight text-slate-950">
+          <Link
+            href="/"
+            className="relative inline-flex w-fit items-center gap-2 text-2xl font-black tracking-tight text-slate-950"
+          >
             <span className="grid h-11 w-11 place-items-center rounded-2xl bg-blue-700 text-white shadow-lg shadow-blue-700/20">
               <IoCarSportOutline className="h-6 w-6" aria-hidden="true" />
             </span>
@@ -37,7 +36,9 @@ export default async function LoginPage({
           </Link>
 
           <div className="relative my-auto max-w-lg py-16">
-            <p className="text-sm font-bold uppercase tracking-[0.24em] text-blue-700">Tu vehículo, siempre en marcha</p>
+            <p className="text-sm font-bold uppercase tracking-[0.24em] text-blue-700">
+              Tu vehículo, siempre en marcha
+            </p>
             <h1 className="mt-5 text-5xl font-black leading-[1.05] tracking-tight text-slate-950 xl:text-6xl">
               Todo lo que necesitas, en un solo lugar.
             </h1>
@@ -68,13 +69,19 @@ export default async function LoginPage({
         <section className="flex min-h-screen items-center justify-center px-5 py-8 sm:px-8 lg:px-12">
           <div className="w-full max-w-[480px]">
             <div className="mb-10 flex items-center justify-between lg:hidden">
-              <Link href="/" className="inline-flex items-center gap-2 text-xl font-black tracking-tight text-slate-950">
+              <Link
+                href="/"
+                className="inline-flex items-center gap-2 text-xl font-black tracking-tight text-slate-950"
+              >
                 <span className="grid h-10 w-10 place-items-center rounded-xl bg-blue-700 text-white">
                   <IoCarSportOutline className="h-6 w-6" aria-hidden="true" />
                 </span>
                 Viccs<span className="-ml-2 text-blue-700">Auto</span>
               </Link>
-              <Link href="/" className="inline-flex items-center gap-2 text-sm font-bold text-slate-500 transition hover:text-slate-950">
+              <Link
+                href="/"
+                className="inline-flex items-center gap-2 text-sm font-bold text-slate-500 transition hover:text-slate-950"
+              >
                 <IoArrowBackOutline aria-hidden="true" /> Inicio
               </Link>
             </div>
@@ -85,8 +92,12 @@ export default async function LoginPage({
                   <IoLockClosedOutline className="h-6 w-6" aria-hidden="true" />
                 </div>
                 <p className="text-sm font-bold uppercase tracking-[0.18em] text-blue-700">Mi cuenta</p>
-                <h2 className="mt-2 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">Bienvenido de vuelta</h2>
-                <p className="mt-3 font-normal leading-6 text-slate-500">Ingresa tus datos para continuar a tu cuenta.</p>
+                <h2 className="mt-2 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
+                  Bienvenido de vuelta
+                </h2>
+                <p className="mt-3 font-normal leading-6 text-slate-500">
+                  Ingresa tus datos para continuar a tu cuenta.
+                </p>
               </div>
 
               <LoginForm hasError={Boolean(error)} />
@@ -101,9 +112,14 @@ export default async function LoginPage({
 
             <p className="mt-6 text-center text-xs font-normal text-slate-400">
               Al ingresar aceptas nuestros{" "}
-              <Link href="/terms" className="underline underline-offset-2 hover:text-slate-600">términos de uso</Link>
+              <Link href="/terms" className="underline underline-offset-2 hover:text-slate-600">
+                términos de uso
+              </Link>
               {" y "}
-              <Link href="/privacy" className="underline underline-offset-2 hover:text-slate-600">política de privacidad</Link>.
+              <Link href="/privacy" className="underline underline-offset-2 hover:text-slate-600">
+                política de privacidad
+              </Link>
+              .
             </p>
           </div>
         </section>

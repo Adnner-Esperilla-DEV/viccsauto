@@ -2,12 +2,7 @@
 
 import { type RefObject, useEffect, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
-import {
-  IoAlertCircleOutline,
-  IoEyeOffOutline,
-  IoEyeOutline,
-  IoLockClosedOutline,
-} from "react-icons/io5";
+import { IoAlertCircleOutline, IoEyeOffOutline, IoEyeOutline, IoLockClosedOutline } from "react-icons/io5";
 
 import { registerAction } from "@/app/actions/auth";
 
@@ -46,7 +41,10 @@ function PasswordField({
     <label className="text-sm font-bold text-slate-700 sm:col-span-2" htmlFor={id}>
       {label}
       <span className="relative mt-2 block">
-        <IoLockClosedOutline className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" aria-hidden="true" />
+        <IoLockClosedOutline
+          className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400"
+          aria-hidden="true"
+        />
         <input
           ref={inputRef}
           id={id}
@@ -87,34 +85,73 @@ export function NewAccountForm({ error }: { error?: string }) {
     );
   }, [confirmation, password]);
 
-  const inputStyles = "mt-2 w-full rounded-2xl border border-slate-200 bg-white p-3.5 font-normal outline-none transition hover:border-slate-300 focus:border-blue-600 focus:ring-4 focus:ring-blue-100";
-  const errorMessage = error === "password-match"
-    ? "Las contraseñas no coinciden. Escríbelas nuevamente."
-    : "No pudimos crear la cuenta. Revisa los datos o utiliza otro correo.";
+  const inputStyles =
+    "mt-2 w-full rounded-2xl border border-slate-200 bg-white p-3.5 font-normal outline-none transition hover:border-slate-300 focus:border-blue-600 focus:ring-4 focus:ring-blue-100";
+  const errorMessage =
+    error === "password-match"
+      ? "Las contraseñas no coinciden. Escríbelas nuevamente."
+      : "No pudimos crear la cuenta. Revisa los datos o utiliza otro correo.";
 
   return (
     <form action={registerAction} className="mt-7 grid gap-4 sm:grid-cols-2">
       {error && (
-        <div role="alert" className="flex gap-3 rounded-2xl border border-red-100 bg-red-50 p-4 text-sm text-red-700 sm:col-span-2">
+        <div
+          role="alert"
+          className="flex gap-3 rounded-2xl border border-red-100 bg-red-50 p-4 text-sm text-red-700 sm:col-span-2"
+        >
           <IoAlertCircleOutline className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
           <p>{errorMessage}</p>
         </div>
       )}
 
-      <label className="text-sm font-bold text-slate-700">Nombre
-        <input required name="firstName" minLength={2} maxLength={60} autoComplete="given-name" className={inputStyles} />
+      <label className="text-sm font-bold text-slate-700">
+        Nombre
+        <input
+          required
+          name="firstName"
+          minLength={2}
+          maxLength={60}
+          autoComplete="given-name"
+          className={inputStyles}
+        />
       </label>
-      <label className="text-sm font-bold text-slate-700">Apellido
-        <input required name="lastName" minLength={2} maxLength={60} autoComplete="family-name" className={inputStyles} />
+      <label className="text-sm font-bold text-slate-700">
+        Apellido
+        <input
+          required
+          name="lastName"
+          minLength={2}
+          maxLength={60}
+          autoComplete="family-name"
+          className={inputStyles}
+        />
       </label>
-      <label className="text-sm font-bold text-slate-700 sm:col-span-2">Correo
-        <input required type="email" name="email" autoComplete="email" inputMode="email" autoCapitalize="none" spellCheck={false} className={inputStyles} />
+      <label className="text-sm font-bold text-slate-700 sm:col-span-2">
+        Correo
+        <input
+          required
+          type="email"
+          name="email"
+          autoComplete="email"
+          inputMode="email"
+          autoCapitalize="none"
+          spellCheck={false}
+          className={inputStyles}
+        />
       </label>
-      <label className="text-sm font-bold text-slate-700 sm:col-span-2">Teléfono
+      <label className="text-sm font-bold text-slate-700 sm:col-span-2">
+        Teléfono
         <input name="phone" maxLength={30} autoComplete="tel" inputMode="tel" className={inputStyles} />
       </label>
 
-      <PasswordField id="new-password" label="Contraseña" name="password" visible={showPassword} onToggle={() => setShowPassword((visible) => !visible)} onChange={setPassword} />
+      <PasswordField
+        id="new-password"
+        label="Contraseña"
+        name="password"
+        visible={showPassword}
+        onToggle={() => setShowPassword((visible) => !visible)}
+        onChange={setPassword}
+      />
       <PasswordField
         id="confirm-password"
         label="Repetir contraseña"

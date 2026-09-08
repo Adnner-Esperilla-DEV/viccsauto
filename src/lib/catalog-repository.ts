@@ -56,7 +56,16 @@ export function mapProduct(record: ProductRecord): AutomotiveProduct {
   };
 }
 
-export async function listProducts(filters: { query?: string; category?: string; featured?: boolean; makeId?: string; modelId?: string; inStockOnly?: boolean } = {}) {
+export async function listProducts(
+  filters: {
+    query?: string;
+    category?: string;
+    featured?: boolean;
+    makeId?: string;
+    modelId?: string;
+    inStockOnly?: boolean;
+  } = {},
+) {
   const query = filters.query?.trim();
   const searchTerms = query?.split(/\s+/).filter(Boolean) ?? [];
   const records = await db.product.findMany({
@@ -67,7 +76,12 @@ export async function listProducts(filters: { query?: string; category?: string;
       images: filters.featured === true ? { some: {} } : undefined,
       category: filters.category ? { slug: filters.category, isActive: true } : { isActive: true },
       compatibility: filters.modelId
-        ? { some: { vehicleModelId: filters.modelId, vehicleModel: filters.makeId ? { makeId: filters.makeId } : undefined } }
+        ? {
+            some: {
+              vehicleModelId: filters.modelId,
+              vehicleModel: filters.makeId ? { makeId: filters.makeId } : undefined,
+            },
+          }
         : filters.makeId
           ? { some: { vehicleModel: { makeId: filters.makeId } } }
           : undefined,
@@ -103,10 +117,7 @@ export async function listProductVehicleFilterOptions(): Promise<ProductVehicleF
         },
       },
     },
-    orderBy: [
-      { vehicleModel: { make: { name: "asc" } } },
-      { vehicleModel: { name: "asc" } },
-    ],
+    orderBy: [{ vehicleModel: { make: { name: "asc" } } }, { vehicleModel: { name: "asc" } }],
   });
 
   const makes = new Map<string, ProductVehicleFilterOption>();
@@ -127,8 +138,16 @@ export async function getProductBySlug(slug: string) {
 }
 
 export async function listCategories(): Promise<CategorySummary[]> {
-  const rows = await db.category.findMany({ where: { isActive: true }, orderBy: [{ position: "asc" }, { name: "asc" }] });
-  return rows.map((row) => ({ slug: row.slug, name: row.name, description: row.description, icon: row.icon as CategorySummary["icon"] }));
+  const rows = await db.category.findMany({
+    where: { isActive: true },
+    orderBy: [{ position: "asc" }, { name: "asc" }],
+  });
+  return rows.map((row) => ({
+    slug: row.slug,
+    name: row.name,
+    description: row.description,
+    icon: row.icon as CategorySummary["icon"],
+  }));
 }
 
 export async function getCategoryBySlug(slug: string) {
@@ -163,7 +182,11 @@ function mapVehicle(row: VehicleRecord): VehicleListing {
 }
 
 export async function listVehicles(featured?: boolean) {
-  const rows = await db.vehicle.findMany({ where: { status: "AVAILABLE", featured }, include: vehicleInclude, orderBy: [{ featured: "desc" }, { createdAt: "desc" }] });
+  const rows = await db.vehicle.findMany({
+    where: { status: "AVAILABLE", featured },
+    include: vehicleInclude,
+    orderBy: [{ featured: "desc" }, { createdAt: "desc" }],
+  });
   return rows.map(mapVehicle);
 }
 

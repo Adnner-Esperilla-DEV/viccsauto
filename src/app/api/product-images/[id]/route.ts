@@ -7,7 +7,10 @@ export const dynamic = "force-dynamic";
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const image = await db.productImage.findUnique({ where: { id }, select: { mimeType: true, storageKey: true, url: true } });
+  const image = await db.productImage.findUnique({
+    where: { id },
+    select: { mimeType: true, storageKey: true, url: true },
+  });
   if (!image) return new NextResponse(null, { status: 404 });
 
   if (image.storageKey) {

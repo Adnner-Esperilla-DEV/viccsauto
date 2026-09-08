@@ -7,5 +7,89 @@ import { getVehicleBySlug } from "@/lib/catalog-repository";
 import { absoluteUrl, formatPrice } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
-export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> { const v = await getVehicleBySlug((await params).slug); return v ? { title: `${v.year} ${v.make} ${v.model}`, description: v.description, alternates: { canonical: `/vehicle/${v.slug}` } } : {}; }
-export default async function VehiclePage({ params }: { params: Promise<{ slug: string }> }) { const v = await getVehicleBySlug((await params).slug); if (!v) notFound(); const vehicleName = `${v.year} ${v.make} ${v.model}`; const jsonLd = { "@context": "https://schema.org", "@type": ["Product", "Car"], name: vehicleName, description: v.description, image: v.images?.map(absoluteUrl), brand: { "@type": "Brand", name: v.make }, model: v.model, vehicleModelDate: String(v.year), mileageFromOdometer: { "@type": "QuantitativeValue", value: v.mileage, unitCode: "KMT" }, offers: { "@type": "Offer", url: absoluteUrl(`/vehicle/${v.slug}`), priceCurrency: siteConfig.currency, price: v.price, availability: "https://schema.org/InStock", itemCondition: "https://schema.org/UsedCondition" } }; return <main className="mx-auto max-w-7xl px-6 py-12"><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }}/><div className="grid gap-12 lg:grid-cols-2"><div>{v.images?.length ? <ProductImageGallery images={v.images} name={vehicleName} type="vehículo" /> : <div className="flex aspect-[4/3] items-center justify-center rounded-[3rem] bg-slate-950"><IoCarSportOutline className="h-48 w-48 text-blue-300"/></div>}</div><div><span className="rounded-full bg-blue-100 px-4 py-2 text-sm font-bold text-blue-800">{v.condition}</span><h1 className="mt-6 text-5xl font-black">{vehicleName}</h1><strong className="mt-5 block text-4xl text-blue-700">{formatPrice(v.price)}</strong><p className="mt-6 text-lg leading-8 text-slate-600">{v.description}</p><dl className="mt-8 grid grid-cols-2 gap-4 rounded-3xl bg-white p-6 shadow-sm"><div><dt className="text-xs uppercase text-slate-500">Kilometraje</dt><dd className="font-bold">{v.mileage.toLocaleString("es-CL")} km</dd></div><div><dt className="text-xs uppercase text-slate-500">Transmisión</dt><dd className="font-bold">{v.transmission}</dd></div><div><dt className="text-xs uppercase text-slate-500">Combustible</dt><dd className="font-bold">{v.fuel}</dd></div><div><dt className="text-xs uppercase text-slate-500">Ubicación</dt><dd className="font-bold">{v.location}</dd></div></dl><a href={`https://wa.me/${siteConfig.whatsapp}?text=${encodeURIComponent(`Hola, me interesa el ${vehicleName}`)}`} className="mt-7 inline-flex rounded-full bg-emerald-600 px-7 py-4 font-bold text-white">Cotizar o agendar visita</a><p className="mt-3 text-sm text-slate-500">Los vehículos se gestionan por cotización; no se agregan al carrito de repuestos.</p></div></div></main>; }
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const v = await getVehicleBySlug((await params).slug);
+  return v
+    ? {
+        title: `${v.year} ${v.make} ${v.model}`,
+        description: v.description,
+        alternates: { canonical: `/vehicle/${v.slug}` },
+      }
+    : {};
+}
+export default async function VehiclePage({ params }: { params: Promise<{ slug: string }> }) {
+  const v = await getVehicleBySlug((await params).slug);
+  if (!v) notFound();
+  const vehicleName = `${v.year} ${v.make} ${v.model}`;
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": ["Product", "Car"],
+    name: vehicleName,
+    description: v.description,
+    image: v.images?.map(absoluteUrl),
+    brand: { "@type": "Brand", name: v.make },
+    model: v.model,
+    vehicleModelDate: String(v.year),
+    mileageFromOdometer: { "@type": "QuantitativeValue", value: v.mileage, unitCode: "KMT" },
+    offers: {
+      "@type": "Offer",
+      url: absoluteUrl(`/vehicle/${v.slug}`),
+      priceCurrency: siteConfig.currency,
+      price: v.price,
+      availability: "https://schema.org/InStock",
+      itemCondition: "https://schema.org/UsedCondition",
+    },
+  };
+  return (
+    <main className="mx-auto max-w-7xl px-6 py-12">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }}
+      />
+      <div className="grid gap-12 lg:grid-cols-2">
+        <div>
+          {v.images?.length ? (
+            <ProductImageGallery images={v.images} name={vehicleName} type="vehículo" />
+          ) : (
+            <div className="flex aspect-[4/3] items-center justify-center rounded-[3rem] bg-slate-950">
+              <IoCarSportOutline className="h-48 w-48 text-blue-300" />
+            </div>
+          )}
+        </div>
+        <div>
+          <span className="rounded-full bg-blue-100 px-4 py-2 text-sm font-bold text-blue-800">{v.condition}</span>
+          <h1 className="mt-6 text-5xl font-black">{vehicleName}</h1>
+          <strong className="mt-5 block text-4xl text-blue-700">{formatPrice(v.price)}</strong>
+          <p className="mt-6 text-lg leading-8 text-slate-600">{v.description}</p>
+          <dl className="mt-8 grid grid-cols-2 gap-4 rounded-3xl bg-white p-6 shadow-sm">
+            <div>
+              <dt className="text-xs uppercase text-slate-500">Kilometraje</dt>
+              <dd className="font-bold">{v.mileage.toLocaleString("es-CL")} km</dd>
+            </div>
+            <div>
+              <dt className="text-xs uppercase text-slate-500">Transmisión</dt>
+              <dd className="font-bold">{v.transmission}</dd>
+            </div>
+            <div>
+              <dt className="text-xs uppercase text-slate-500">Combustible</dt>
+              <dd className="font-bold">{v.fuel}</dd>
+            </div>
+            <div>
+              <dt className="text-xs uppercase text-slate-500">Ubicación</dt>
+              <dd className="font-bold">{v.location}</dd>
+            </div>
+          </dl>
+          <a
+            href={`https://wa.me/${siteConfig.whatsapp}?text=${encodeURIComponent(`Hola, me interesa el ${vehicleName}`)}`}
+            className="mt-7 inline-flex rounded-full bg-emerald-600 px-7 py-4 font-bold text-white"
+          >
+            Cotizar o agendar visita
+          </a>
+          <p className="mt-3 text-sm text-slate-500">
+            Los vehículos se gestionan por cotización; no se agregan al carrito de repuestos.
+          </p>
+        </div>
+      </div>
+    </main>
+  );
+}

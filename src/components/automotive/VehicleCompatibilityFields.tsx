@@ -6,7 +6,11 @@ import { IoCheckmarkOutline, IoSearchOutline } from "react-icons/io5";
 type Option = { id: string; name: string };
 
 function normalized(value: string) {
-  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
 }
 
 function matches(options: Option[], query: string) {
@@ -15,10 +19,11 @@ function matches(options: Option[], query: string) {
 
   return options
     .filter((option) => normalized(option.name).includes(term))
-    .sort((left, right) => (
-      Number(normalized(right.name).startsWith(term)) - Number(normalized(left.name).startsWith(term))
-      || left.name.localeCompare(right.name, "es")
-    ))
+    .sort(
+      (left, right) =>
+        Number(normalized(right.name).startsWith(term)) - Number(normalized(left.name).startsWith(term)) ||
+        left.name.localeCompare(right.name, "es"),
+    )
     .slice(0, 5);
 }
 
@@ -41,8 +46,6 @@ export function VehicleCompatibilityFields({ makes }: { makes: Option[] }) {
     if (!selectedMake) return;
 
     const controller = new AbortController();
-    setLoading(true);
-    setLoadError(false);
 
     fetch(`/api/vehicle-models?makeId=${encodeURIComponent(selectedMake.id)}`, {
       cache: "no-store",
@@ -64,6 +67,8 @@ export function VehicleCompatibilityFields({ makes }: { makes: Option[] }) {
   }, [selectedMake]);
 
   function chooseMake(make: Option) {
+    setLoading(true);
+    setLoadError(false);
     setSelectedMake(make);
     setMakeQuery(make.name);
     setSelectedModel(null);
@@ -80,16 +85,22 @@ export function VehicleCompatibilityFields({ makes }: { makes: Option[] }) {
     modelInput.current?.setCustomValidity("");
   }
 
-  const inputClass = "w-full rounded-xl border border-slate-300 bg-white py-3 pl-11 pr-4 font-normal outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-100";
+  const inputClass =
+    "w-full rounded-xl border border-slate-300 bg-white py-3 pl-11 pr-4 font-normal outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-100";
 
   return (
     <div className="grid gap-4 md:col-span-2 md:grid-cols-2">
       <input type="hidden" name="vehicleModelId" value={selectedModel?.id ?? ""} />
 
       <div className="relative">
-        <label htmlFor="vehicle-make" className="text-sm font-bold text-slate-700">Marca</label>
+        <label htmlFor="vehicle-make" className="text-sm font-bold text-slate-700">
+          Marca
+        </label>
         <div className="relative mt-2">
-          <IoSearchOutline className="pointer-events-none absolute left-4 top-4 h-5 w-5 text-slate-400" aria-hidden="true" />
+          <IoSearchOutline
+            className="pointer-events-none absolute left-4 top-4 h-5 w-5 text-slate-400"
+            aria-hidden="true"
+          />
           <input
             ref={makeInput}
             id="vehicle-make"
@@ -121,6 +132,8 @@ export function VehicleCompatibilityFields({ makes }: { makes: Option[] }) {
               setSelectedModel(null);
               setModelQuery("");
               setModels([]);
+              setLoading(false);
+              setLoadError(false);
               setMakeOpen(true);
             }}
           />
@@ -140,9 +153,14 @@ export function VehicleCompatibilityFields({ makes }: { makes: Option[] }) {
       </div>
 
       <div className="relative">
-        <label htmlFor="vehicle-model" className="text-sm font-bold text-slate-700">Modelo</label>
+        <label htmlFor="vehicle-model" className="text-sm font-bold text-slate-700">
+          Modelo
+        </label>
         <div className="relative mt-2">
-          <IoSearchOutline className="pointer-events-none absolute left-4 top-4 h-5 w-5 text-slate-400" aria-hidden="true" />
+          <IoSearchOutline
+            className="pointer-events-none absolute left-4 top-4 h-5 w-5 text-slate-400"
+            aria-hidden="true"
+          />
           <input
             ref={modelInput}
             id="vehicle-model"
@@ -154,7 +172,13 @@ export function VehicleCompatibilityFields({ makes }: { makes: Option[] }) {
             aria-autocomplete="list"
             aria-expanded={modelOpen && Boolean(modelQuery.trim())}
             aria-controls="vehicle-model-list"
-            placeholder={loading ? "Cargando modelos…" : selectedMake ? `Buscar modelo de ${selectedMake.name}` : "Primero selecciona la marca"}
+            placeholder={
+              loading
+                ? "Cargando modelos…"
+                : selectedMake
+                  ? `Buscar modelo de ${selectedMake.name}`
+                  : "Primero selecciona la marca"
+            }
             className={inputClass}
             onFocus={() => setModelOpen(true)}
             onBlur={() => setModelOpen(false)}
@@ -186,7 +210,9 @@ export function VehicleCompatibilityFields({ makes }: { makes: Option[] }) {
           />
         )}
         {loadError && (
-          <p className="mt-1 text-xs font-normal text-red-700">No se pudieron cargar los modelos. Vuelve a seleccionar la marca.</p>
+          <p className="mt-1 text-xs font-normal text-red-700">
+            No se pudieron cargar los modelos. Vuelve a seleccionar la marca.
+          </p>
         )}
         {!selectedModel && modelQuery && !loading && (
           <p className="mt-1 text-xs font-normal text-amber-700">Selecciona un modelo de las sugerencias.</p>
@@ -196,7 +222,13 @@ export function VehicleCompatibilityFields({ makes }: { makes: Option[] }) {
   );
 }
 
-function Options({ id, options, selectedId, empty, choose }: {
+function Options({
+  id,
+  options,
+  selectedId,
+  empty,
+  choose,
+}: {
   id: string;
   options: Option[];
   selectedId?: string;
@@ -204,7 +236,11 @@ function Options({ id, options, selectedId, empty, choose }: {
   choose: (option: Option) => void;
 }) {
   return (
-    <div id={id} role="listbox" className="absolute inset-x-0 top-full z-30 mt-2 overflow-hidden rounded-2xl border border-slate-200 bg-white p-2 shadow-xl">
+    <div
+      id={id}
+      role="listbox"
+      className="absolute inset-x-0 top-full z-30 mt-2 overflow-hidden rounded-2xl border border-slate-200 bg-white p-2 shadow-xl"
+    >
       {options.map((option) => (
         <button
           key={option.id}

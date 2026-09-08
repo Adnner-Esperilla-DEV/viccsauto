@@ -17,7 +17,9 @@ export function formatImportDate(date: Date | string | null | undefined) {
   if (!date) return "—";
   const parsed = date instanceof Date ? date : new Date(date);
   if (Number.isNaN(parsed.getTime())) return "—";
-  return new Intl.DateTimeFormat("es-CL", { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "UTC" }).format(parsed).replaceAll("/", "-");
+  return new Intl.DateTimeFormat("es-CL", { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "UTC" })
+    .format(parsed)
+    .replaceAll("/", "-");
 }
 
 export const keyStatusLabels: Record<string, string> = {

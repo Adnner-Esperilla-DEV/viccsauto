@@ -5,18 +5,50 @@ import { logoutAction } from "@/app/actions/auth";
 import { getSessionUser, isStaff } from "@/lib/auth";
 
 const links = [
-  ["/admin", "Resumen"], ["/admin/pos", "Venta presencial"], ["/admin/catalog", "Categorías y marcas"],
-  ["/admin/products", "Productos"], ["/admin/vehicles", "Vehículos"], ["/admin/imports", "Importaciones"],
-  ["/admin/inventory", "Inventario"], ["/admin/orders", "Pedidos"], ["/admin/customers", "Clientes"],
+  ["/admin", "Resumen"],
+  ["/admin/pos", "Venta presencial"],
+  ["/admin/catalog", "Categorías y marcas"],
+  ["/admin/products", "Productos"],
+  ["/admin/vehicles", "Vehículos"],
+  ["/admin/imports", "Importaciones"],
+  ["/admin/inventory", "Inventario"],
+  ["/admin/orders", "Pedidos"],
+  ["/admin/customers", "Clientes"],
   ["/admin/settings", "Configuración"],
 ] as const;
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const user = await getSessionUser();
   if (!isStaff(user)) redirect("/auth/login");
-  return <div className="min-h-screen bg-slate-100">
-    <header className="border-b bg-slate-950 text-white"><div className="mx-auto flex max-w-7xl flex-wrap items-center gap-4 px-6 py-5"><Link href="/admin" className="mr-auto text-xl font-black">ViccsAuto Admin</Link><span className="text-sm text-slate-300">{user!.firstName} · {user!.role}</span><form action={logoutAction}><button className="rounded-full border border-white/20 px-4 py-2 text-sm">Salir</button></form></div></header>
-    <nav className="border-b bg-white"><div className="mx-auto flex max-w-7xl gap-1 overflow-x-auto px-6 py-3">{links.map(([href, label]) => <Link key={href} href={href} className="whitespace-nowrap rounded-full px-4 py-2 text-sm font-bold hover:bg-blue-50 hover:text-blue-700">{label}</Link>)}</div></nav>
-    {children}
-  </div>;
+  return (
+    <div className="min-h-screen bg-slate-100">
+      <header className="border-b bg-slate-950 text-white">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-4 px-6 py-5">
+          <Link href="/admin" className="mr-auto text-xl font-black">
+            ViccsAuto Admin
+          </Link>
+          <span className="text-sm text-slate-300">
+            {user!.firstName} · {user!.role}
+          </span>
+          <form action={logoutAction}>
+            <button className="rounded-full border border-white/20 px-4 py-2 text-sm">Salir</button>
+          </form>
+        </div>
+      </header>
+      <nav className="border-b bg-white">
+        <div className="mx-auto flex max-w-7xl gap-1 overflow-x-auto px-6 py-3">
+          {links.map(([href, label]) => (
+            <Link
+              key={href}
+              href={href}
+              className="whitespace-nowrap rounded-full px-4 py-2 text-sm font-bold hover:bg-blue-50 hover:text-blue-700"
+            >
+              {label}
+            </Link>
+          ))}
+        </div>
+      </nav>
+      {children}
+    </div>
+  );
 }

@@ -1,0 +1,7 @@
+.next
+node_modules
+.prisma-generated-temp
+coverage
+public/products
+package-lock.json
+*.tsbuildinfo

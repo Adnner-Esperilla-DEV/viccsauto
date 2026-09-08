@@ -17,7 +17,15 @@ export async function updateCommerceSettingsAction(formData: FormData) {
 
   const rateBps = Math.round(parsed.data.customsTaxRate * 100);
   await saveCustomsTaxRateBps(rateBps);
-  await db.auditLog.create({ data: { userId: user.id, action: "UPDATE_COMMERCE_SETTINGS", entity: "AppSetting", entityId: "customs_tax_rate_bps", details: JSON.stringify({ customsTaxRateBps: rateBps }) } });
+  await db.auditLog.create({
+    data: {
+      userId: user.id,
+      action: "UPDATE_COMMERCE_SETTINGS",
+      entity: "AppSetting",
+      entityId: "customs_tax_rate_bps",
+      details: JSON.stringify({ customsTaxRateBps: rateBps }),
+    },
+  });
   revalidatePath("/checkout");
   revalidatePath("/admin/settings");
   redirect("/admin/settings?ok=updated");

@@ -18,7 +18,12 @@ function secret() {
 export type SessionUser = { id: string; email: string; firstName: string; lastName: string; role: string };
 
 export async function createSession(user: SessionUser) {
-  const token = await new SignJWT({ email: user.email, role: user.role, firstName: user.firstName, lastName: user.lastName })
+  const token = await new SignJWT({
+    email: user.email,
+    role: user.role,
+    firstName: user.firstName,
+    lastName: user.lastName,
+  })
     .setProtectedHeader({ alg: "HS256" })
     .setSubject(user.id)
     .setIssuedAt()
@@ -43,7 +48,10 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   try {
     const { payload } = await jwtVerify(token, secret());
     if (!payload.sub) return null;
-    const user = await db.user.findFirst({ where: { id: payload.sub, status: "ACTIVE" }, select: { id: true, email: true, firstName: true, lastName: true, role: true } });
+    const user = await db.user.findFirst({
+      where: { id: payload.sub, status: "ACTIVE" },
+      select: { id: true, email: true, firstName: true, lastName: true, role: true },
+    });
     return user;
   } catch {
     return null;

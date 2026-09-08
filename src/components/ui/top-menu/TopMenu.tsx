@@ -26,10 +26,18 @@ export const TopMenu = async () => {
         </Link>
 
         <div className="hidden sm:block">
-          <Link className="m-2 rounded-md p-2 hover:bg-gray-100" href="/products">Autopartes</Link>
-          <Link className="m-2 rounded-md p-2 hover:bg-gray-100" href="/category/frenos">Frenos</Link>
-          <Link className="m-2 rounded-md p-2 hover:bg-gray-100" href="/vehicles">Vehículos</Link>
-          <Link className="m-2 rounded-md p-2 hover:bg-gray-100" href="/#importacion-vehiculos">Importación</Link>
+          <Link className="m-2 rounded-md p-2 hover:bg-gray-100" href="/products">
+            Autopartes
+          </Link>
+          <Link className="m-2 rounded-md p-2 hover:bg-gray-100" href="/category/frenos">
+            Frenos
+          </Link>
+          <Link className="m-2 rounded-md p-2 hover:bg-gray-100" href="/vehicles">
+            Vehículos
+          </Link>
+          <Link className="m-2 rounded-md p-2 hover:bg-gray-100" href="/#importacion-vehiculos">
+            Importación
+          </Link>
         </div>
 
         <div className="flex items-center gap-3">
@@ -52,7 +60,9 @@ export const TopMenu = async () => {
                   <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-white bg-emerald-500" />
                 </span>
                 <span className="hidden min-w-0 leading-tight lg:block">
-                  <span className="block text-[10px] font-semibold uppercase tracking-wider text-slate-400">Mi cuenta</span>
+                  <span className="block text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                    Mi cuenta
+                  </span>
                   <span className="block max-w-24 truncate text-xs font-bold text-slate-800 group-hover:text-blue-800">
                     {user.firstName}
                   </span>

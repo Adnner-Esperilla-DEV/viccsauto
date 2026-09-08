@@ -11,7 +11,11 @@ import { importStatusLabel } from "@/lib/import-status";
 export const dynamic = "force-dynamic";
 const PAGE_SIZE = 20;
 
-export default async function ImportsAdminPage({ searchParams }: { searchParams: Promise<{ error?: string; ok?: string; page?: string; type?: string }> }) {
+export default async function ImportsAdminPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string; ok?: string; page?: string; type?: string }>;
+}) {
   await requireStaff();
   const query = await searchParams;
   const requestedPage = Number(query.page ?? "1");
@@ -44,15 +48,44 @@ export default async function ImportsAdminPage({ searchParams }: { searchParams:
           <h1 className="mt-2 text-3xl font-black sm:text-4xl">Importaciones</h1>
           <p className="mt-2 text-slate-600">Seguimiento de vehículos, repuestos y autopartes por cliente.</p>
         </div>
-        <Link href="/admin/imports/new" className="rounded-xl bg-blue-700 px-5 py-3 font-bold text-white hover:bg-blue-800">
+        <Link
+          href="/admin/imports/new"
+          className="rounded-xl bg-blue-700 px-5 py-3 font-bold text-white hover:bg-blue-800"
+        >
           Nueva importación
         </Link>
       </div>
 
-      <div className="mt-6 flex flex-wrap gap-2">{[[undefined, "Todas"], ["VEHICLE", "Vehículos"], ["PARTS", "Repuestos"]].map(([value, label]) => <Link key={label} href={value ? `/admin/imports?type=${value}` : "/admin/imports"} className={`rounded-full px-4 py-2 text-sm font-bold ${type === value || (!type && !value) ? "bg-blue-700 text-white" : "border bg-white text-slate-700"}`}>{label}</Link>)}</div>
+      <div className="mt-6 flex flex-wrap gap-2">
+        {[
+          [undefined, "Todas"],
+          ["VEHICLE", "Vehículos"],
+          ["PARTS", "Repuestos"],
+        ].map(([value, label]) => (
+          <Link
+            key={label}
+            href={value ? `/admin/imports?type=${value}` : "/admin/imports"}
+            className={`rounded-full px-4 py-2 text-sm font-bold ${type === value || (!type && !value) ? "bg-blue-700 text-white" : "border bg-white text-slate-700"}`}
+          >
+            {label}
+          </Link>
+        ))}
+      </div>
 
-      {query.ok === "deleted" && <p className="mt-5 rounded-xl bg-emerald-50 p-3 font-semibold text-emerald-800">Importación eliminada correctamente.</p>}
-      {query.error?.startsWith("delete-") && <p role="alert" className="mt-5 rounded-xl bg-red-50 p-3 font-semibold text-red-700">{query.error === "delete-not-found" ? "La importación ya no existe o fue eliminada." : query.error === "delete-invalid" ? "La importación seleccionada no es válida." : "No se pudo eliminar la importación. Intenta nuevamente."}</p>}
+      {query.ok === "deleted" && (
+        <p className="mt-5 rounded-xl bg-emerald-50 p-3 font-semibold text-emerald-800">
+          Importación eliminada correctamente.
+        </p>
+      )}
+      {query.error?.startsWith("delete-") && (
+        <p role="alert" className="mt-5 rounded-xl bg-red-50 p-3 font-semibold text-red-700">
+          {query.error === "delete-not-found"
+            ? "La importación ya no existe o fue eliminada."
+            : query.error === "delete-invalid"
+              ? "La importación seleccionada no es válida."
+              : "No se pudo eliminar la importación. Intenta nuevamente."}
+        </p>
+      )}
 
       <section className="mt-7 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="overflow-x-auto">
@@ -67,7 +100,9 @@ export default async function ImportsAdminPage({ searchParams }: { searchParams:
                 <Header align="right">Saldo</Header>
                 <Header>Seguimiento</Header>
                 <Header>Actualizado</Header>
-                <Header align="right"><span className="sr-only">Acciones</span></Header>
+                <Header align="right">
+                  <span className="sr-only">Acciones</span>
+                </Header>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -82,34 +117,60 @@ export default async function ImportsAdminPage({ searchParams }: { searchParams:
                   otherChargesUsd: Number(item.otherChargesUsd),
                   paidAmountUsd: Number(item.paidAmountUsd),
                 });
-                const importName = item.importType === "PARTS" ? item.parts[0]?.description ?? "Importación de repuestos" : `${item.year} ${item.make} ${item.model}`;
+                const importName =
+                  item.importType === "PARTS"
+                    ? (item.parts[0]?.description ?? "Importación de repuestos")
+                    : `${item.year} ${item.make} ${item.model}`;
 
                 return (
                   <tr key={item.id} className="group transition hover:bg-blue-50/50">
                     <Cell>
-                      <Link href={`/admin/imports/${item.id}`} className="font-black text-slate-950 hover:text-blue-700 hover:underline">
+                      <Link
+                        href={`/admin/imports/${item.id}`}
+                        className="font-black text-slate-950 hover:text-blue-700 hover:underline"
+                      >
                         {importName}
                       </Link>
                       <span className="mt-1 block text-xs text-slate-500">
-                        {item.importType === "PARTS" ? `${item.referenceCode} · ${item._count.parts} ${item._count.parts === 1 ? "repuesto" : "repuestos"}` : item.lotNumber ? `Lote ${item.lotNumber} · VIN ${item.vin}` : `VIN ${item.vin}`}
+                        {item.importType === "PARTS"
+                          ? `${item.referenceCode} · ${item._count.parts} ${item._count.parts === 1 ? "repuesto" : "repuestos"}`
+                          : item.lotNumber
+                            ? `Lote ${item.lotNumber} · VIN ${item.vin}`
+                            : `VIN ${item.vin}`}
                       </span>
                       <span className="mt-1 block text-[11px] text-slate-400">
                         {item._count.images} imágenes · {item._count.attachments} adjuntos
                       </span>
                     </Cell>
                     <Cell>
-                      <span className="block font-bold text-slate-800">{item.customer.firstName} {item.customer.lastName}</span>
-                      <span className="mt-1 block max-w-52 truncate text-xs text-slate-500" title={item.customer.email}>{item.customer.email}</span>
+                      <span className="block font-bold text-slate-800">
+                        {item.customer.firstName} {item.customer.lastName}
+                      </span>
+                      <span className="mt-1 block max-w-52 truncate text-xs text-slate-500" title={item.customer.email}>
+                        {item.customer.email}
+                      </span>
                     </Cell>
                     <Cell>
                       <span className={item.customer.phone ? "font-semibold text-slate-800" : "text-slate-400"}>
                         {item.customer.phone || "No registrado"}
                       </span>
                     </Cell>
-                    <Cell align="right"><Money value={item.importType === "PARTS" ? Number(item.shippingCostUsd) : Number(item.towingCostUsd)} /></Cell>
-                    <Cell align="right"><Money value={item.importType === "PARTS" ? Number(item.logisticsServiceUsd) : Number(item.oceanFreightUsd)} /></Cell>
                     <Cell align="right">
-                      <span className={`inline-flex rounded-lg px-2.5 py-1.5 font-black ${finance.balanceUsd > 0 ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-800"}`}>
+                      <Money
+                        value={item.importType === "PARTS" ? Number(item.shippingCostUsd) : Number(item.towingCostUsd)}
+                      />
+                    </Cell>
+                    <Cell align="right">
+                      <Money
+                        value={
+                          item.importType === "PARTS" ? Number(item.logisticsServiceUsd) : Number(item.oceanFreightUsd)
+                        }
+                      />
+                    </Cell>
+                    <Cell align="right">
+                      <span
+                        className={`inline-flex rounded-lg px-2.5 py-1.5 font-black ${finance.balanceUsd > 0 ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-800"}`}
+                      >
                         {formatUsd(finance.balanceUsd)}
                       </span>
                     </Cell>
@@ -119,15 +180,29 @@ export default async function ImportsAdminPage({ searchParams }: { searchParams:
                       </span>
                     </Cell>
                     <Cell>
-                      <span className="whitespace-nowrap text-xs font-semibold text-slate-600">{item.updatedAt.toLocaleDateString("es-CL")}</span>
-                      <span className="mt-1 block text-xs text-slate-400">{item.updatedAt.toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" })}</span>
+                      <span className="whitespace-nowrap text-xs font-semibold text-slate-600">
+                        {item.updatedAt.toLocaleDateString("es-CL")}
+                      </span>
+                      <span className="mt-1 block text-xs text-slate-400">
+                        {item.updatedAt.toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" })}
+                      </span>
                     </Cell>
                     <Cell align="right">
                       <div className="flex items-center justify-end gap-3">
-                        <Link href={`/admin/imports/${item.id}`} className="inline-flex rounded-lg border border-blue-200 px-3 py-2 text-xs font-black text-blue-700 transition hover:bg-blue-700 hover:text-white">
+                        <Link
+                          href={`/admin/imports/${item.id}`}
+                          className="inline-flex rounded-lg border border-blue-200 px-3 py-2 text-xs font-black text-blue-700 transition hover:bg-blue-700 hover:text-white"
+                        >
                           Ver detalle
                         </Link>
-                        <DeleteEntityForm compact action={deleteVehicleImportAction} entityId={item.id} entityName={`${importName} (${item.referenceCode})`} title="¿Eliminar importación?" description="Se borrarán su seguimiento, notas, imágenes, adjuntos y repuestos asociados." />
+                        <DeleteEntityForm
+                          compact
+                          action={deleteVehicleImportAction}
+                          entityId={item.id}
+                          entityName={`${importName} (${item.referenceCode})`}
+                          title="¿Eliminar importación?"
+                          description="Se borrarán su seguimiento, notas, imágenes, adjuntos y repuestos asociados."
+                        />
                       </div>
                     </Cell>
                   </tr>
@@ -135,7 +210,9 @@ export default async function ImportsAdminPage({ searchParams }: { searchParams:
               })}
               {!imports.length && (
                 <tr>
-                  <td colSpan={9} className="px-6 py-16 text-center text-slate-500">Todavía no hay importaciones registradas.</td>
+                  <td colSpan={9} className="px-6 py-16 text-center text-slate-500">
+                    Todavía no hay importaciones registradas.
+                  </td>
                 </tr>
               )}
             </tbody>
@@ -144,12 +221,51 @@ export default async function ImportsAdminPage({ searchParams }: { searchParams:
       </section>
 
       {total > 0 && (
-        <nav aria-label="Paginación de importaciones" className="mt-5 flex flex-col items-center justify-between gap-4 rounded-2xl border bg-white p-4 sm:flex-row">
-          <p className="text-sm text-slate-500">Mostrando <strong className="text-slate-800">{firstItem}–{lastItem}</strong> de <strong className="text-slate-800">{total}</strong> importaciones</p>
+        <nav
+          aria-label="Paginación de importaciones"
+          className="mt-5 flex flex-col items-center justify-between gap-4 rounded-2xl border bg-white p-4 sm:flex-row"
+        >
+          <p className="text-sm text-slate-500">
+            Mostrando{" "}
+            <strong className="text-slate-800">
+              {firstItem}–{lastItem}
+            </strong>{" "}
+            de <strong className="text-slate-800">{total}</strong> importaciones
+          </p>
           <div className="flex items-center gap-2">
-            {page > 1 ? <Link href={`/admin/imports?page=${page - 1}${type ? `&type=${type}` : ""}`} className="rounded-xl border px-4 py-2 text-sm font-bold text-slate-700 hover:border-blue-300 hover:bg-blue-50">← Anterior</Link> : <span aria-disabled="true" className="cursor-not-allowed rounded-xl border px-4 py-2 text-sm font-bold text-slate-300">← Anterior</span>}
-            <span className="rounded-xl bg-slate-100 px-4 py-2 text-sm font-bold text-slate-700">Página {page} de {totalPages}</span>
-            {page < totalPages ? <Link href={`/admin/imports?page=${page + 1}${type ? `&type=${type}` : ""}`} className="rounded-xl border px-4 py-2 text-sm font-bold text-slate-700 hover:border-blue-300 hover:bg-blue-50">Siguiente →</Link> : <span aria-disabled="true" className="cursor-not-allowed rounded-xl border px-4 py-2 text-sm font-bold text-slate-300">Siguiente →</span>}
+            {page > 1 ? (
+              <Link
+                href={`/admin/imports?page=${page - 1}${type ? `&type=${type}` : ""}`}
+                className="rounded-xl border px-4 py-2 text-sm font-bold text-slate-700 hover:border-blue-300 hover:bg-blue-50"
+              >
+                ← Anterior
+              </Link>
+            ) : (
+              <span
+                aria-disabled="true"
+                className="cursor-not-allowed rounded-xl border px-4 py-2 text-sm font-bold text-slate-300"
+              >
+                ← Anterior
+              </span>
+            )}
+            <span className="rounded-xl bg-slate-100 px-4 py-2 text-sm font-bold text-slate-700">
+              Página {page} de {totalPages}
+            </span>
+            {page < totalPages ? (
+              <Link
+                href={`/admin/imports?page=${page + 1}${type ? `&type=${type}` : ""}`}
+                className="rounded-xl border px-4 py-2 text-sm font-bold text-slate-700 hover:border-blue-300 hover:bg-blue-50"
+              >
+                Siguiente →
+              </Link>
+            ) : (
+              <span
+                aria-disabled="true"
+                className="cursor-not-allowed rounded-xl border px-4 py-2 text-sm font-bold text-slate-300"
+              >
+                Siguiente →
+              </span>
+            )}
           </div>
         </nav>
       )}
@@ -158,7 +274,14 @@ export default async function ImportsAdminPage({ searchParams }: { searchParams:
 }
 
 function Header({ children, align = "left" }: { children: React.ReactNode; align?: "left" | "right" }) {
-  return <th scope="col" className={`whitespace-nowrap px-4 py-3 font-black ${align === "right" ? "text-right" : "text-left"}`}>{children}</th>;
+  return (
+    <th
+      scope="col"
+      className={`whitespace-nowrap px-4 py-3 font-black ${align === "right" ? "text-right" : "text-left"}`}
+    >
+      {children}
+    </th>
+  );
 }
 
 function Cell({ children, align = "left" }: { children: React.ReactNode; align?: "left" | "right" }) {

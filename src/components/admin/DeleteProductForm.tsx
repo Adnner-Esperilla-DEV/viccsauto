@@ -30,7 +30,14 @@ function ConfirmDeleteButton() {
   );
 }
 
-export function DeleteEntityForm({ action, entityId, entityName, title, description, compact = false }: DeleteEntityFormProps) {
+export function DeleteEntityForm({
+  action,
+  entityId,
+  entityName,
+  title,
+  description,
+  compact = false,
+}: DeleteEntityFormProps) {
   const [open, setOpen] = useState(false);
   const titleId = useId();
   const cancelButtonRef = useRef<HTMLButtonElement>(null);
@@ -58,9 +65,11 @@ export function DeleteEntityForm({ action, entityId, entityName, title, descript
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className={compact
-          ? "inline-flex items-center justify-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-700 transition hover:bg-red-100"
-          : "inline-flex items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-5 py-3 text-sm font-bold text-red-700 transition hover:bg-red-100"}
+        className={
+          compact
+            ? "inline-flex items-center justify-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-700 transition hover:bg-red-100"
+            : "inline-flex items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-5 py-3 text-sm font-bold text-red-700 transition hover:bg-red-100"
+        }
       >
         <IoTrashOutline className={compact ? "h-4 w-4" : "h-5 w-5"} aria-hidden="true" />
         Eliminar
@@ -82,9 +91,12 @@ export function DeleteEntityForm({ action, entityId, entityName, title, descript
             <span className="grid h-12 w-12 place-items-center rounded-full bg-red-100 text-red-700">
               <IoAlertCircleOutline className="h-7 w-7" aria-hidden="true" />
             </span>
-            <h2 id={titleId} className="mt-5 text-2xl font-black text-slate-950">{title}</h2>
+            <h2 id={titleId} className="mt-5 text-2xl font-black text-slate-950">
+              {title}
+            </h2>
             <p className="mt-3 text-sm leading-6 text-slate-600">
-              Vas a eliminar <strong className="text-slate-900">{entityName}</strong>. {description} Esta acción no se puede deshacer.
+              Vas a eliminar <strong className="text-slate-900">{entityName}</strong>. {description} Esta acción no se
+              puede deshacer.
             </p>
             <div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
               <button
@@ -104,7 +116,15 @@ export function DeleteEntityForm({ action, entityId, entityName, title, descript
   );
 }
 
-export function DeleteProductForm({ productId, productName, compact = false }: { productId: string; productName: string; compact?: boolean }) {
+export function DeleteProductForm({
+  productId,
+  productName,
+  compact = false,
+}: {
+  productId: string;
+  productName: string;
+  compact?: boolean;
+}) {
   return (
     <DeleteEntityForm
       action={deleteProductAction}

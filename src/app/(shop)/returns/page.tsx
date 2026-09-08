@@ -1,2 +1,17 @@
-import type { Metadata } from "next"; import { CommercialPage } from "@/components/commercial/CommercialPage";
-export const metadata: Metadata={title:"Cambios y devoluciones"}; export default function Page(){return <CommercialPage eyebrow="Postventa" title="Cambios y devoluciones"><p>Solicita el cambio o devolución indicando tu número de pedido. El producto debe conservar embalaje, accesorios y condición original, salvo que presente una falla cubierta por garantía.</p><p>Los costos y plazos dependen del motivo, ubicación y normativa chilena aplicable. Confirmaremos las instrucciones antes de cualquier envío.</p></CommercialPage>}
+import type { Metadata } from "next";
+import { CommercialPage } from "@/components/commercial/CommercialPage";
+export const metadata: Metadata = { title: "Cambios y devoluciones" };
+export default function Page() {
+  return (
+    <CommercialPage eyebrow="Postventa" title="Cambios y devoluciones">
+      <p>
+        Solicita el cambio o devolución indicando tu número de pedido. El producto debe conservar embalaje, accesorios y
+        condición original, salvo que presente una falla cubierta por garantía.
+      </p>
+      <p>
+        Los costos y plazos dependen del motivo, ubicación y normativa chilena aplicable. Confirmaremos las
+        instrucciones antes de cualquier envío.
+      </p>
+    </CommercialPage>
+  );
+}

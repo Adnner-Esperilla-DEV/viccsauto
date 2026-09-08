@@ -1,8 +1,7 @@
 export const siteConfig = {
   name: "ViccsAuto",
   legalName: "ViccsAuto Repuestos y Vehículos",
-  description:
-    "Autopartes, repuestos y vehículos seleccionados con asesoría de compatibilidad en Arica, Chile.",
+  description: "Autopartes, repuestos y vehículos seleccionados con asesoría de compatibilidad en Arica, Chile.",
   url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://viccsauto.cl",
   currency: "CLP",
   locale: "es-CL",

@@ -1,2 +1,17 @@
-import type { Metadata } from "next"; import { CommercialPage } from "@/components/commercial/CommercialPage";
-export const metadata: Metadata={title:"Privacidad"}; export default function Page(){return <CommercialPage eyebrow="Legal" title="Política de privacidad"><p>Tratamos datos de cuenta, contacto, dirección y pedidos para prestar el servicio, prevenir fraude y cumplir obligaciones legales. No vendemos datos personales.</p><p>Las cookies esenciales mantienen la sesión y el carrito. Puedes solicitar acceso, corrección o eliminación cuando legalmente corresponda escribiendo a nuestro correo.</p></CommercialPage>}
+import type { Metadata } from "next";
+import { CommercialPage } from "@/components/commercial/CommercialPage";
+export const metadata: Metadata = { title: "Privacidad" };
+export default function Page() {
+  return (
+    <CommercialPage eyebrow="Legal" title="Política de privacidad">
+      <p>
+        Tratamos datos de cuenta, contacto, dirección y pedidos para prestar el servicio, prevenir fraude y cumplir
+        obligaciones legales. No vendemos datos personales.
+      </p>
+      <p>
+        Las cookies esenciales mantienen la sesión y el carrito. Puedes solicitar acceso, corrección o eliminación
+        cuando legalmente corresponda escribiendo a nuestro correo.
+      </p>
+    </CommercialPage>
+  );
+}
