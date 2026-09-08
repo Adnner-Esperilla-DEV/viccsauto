@@ -5,6 +5,7 @@ export type ImportFinanceValues = {
   oceanFreightUsd: number;
   shippingCostUsd?: number;
   logisticsServiceUsd?: number;
+  otherChargesUsd?: number;
   paidAmountUsd: number;
 };
 
@@ -16,10 +17,11 @@ export function getImportFinanceSummary(values: ImportFinanceValues) {
   const oceanFreightUsd = Math.max(0, values.oceanFreightUsd);
   const shippingCostUsd = Math.max(0, values.shippingCostUsd ?? 0);
   const logisticsServiceUsd = Math.max(0, values.logisticsServiceUsd ?? 0);
+  const otherChargesUsd = Math.max(0, values.otherChargesUsd ?? 0);
   const paidAmountUsd = Math.max(0, values.paidAmountUsd);
   const totalCents = values.importType === "PARTS"
-    ? Math.round(vehicleValueUsd * 100) + Math.round(shippingCostUsd * 100) + Math.round(logisticsServiceUsd * 100)
-    : Math.round(towingCostUsd * 100) + Math.round(oceanFreightUsd * 100);
+    ? Math.round(vehicleValueUsd * 100) + Math.round(shippingCostUsd * 100) + Math.round(logisticsServiceUsd * 100) + Math.round(otherChargesUsd * 100)
+    : Math.round(towingCostUsd * 100) + Math.round(oceanFreightUsd * 100) + Math.round(otherChargesUsd * 100);
   const totalUsd = totalCents / 100;
   const balanceUsd = Math.max(0, totalCents - Math.round(paidAmountUsd * 100)) / 100;
   const paymentStatus = totalUsd === 0
@@ -30,7 +32,7 @@ export function getImportFinanceSummary(values: ImportFinanceValues) {
         ? "PARTIAL"
         : "PAID";
 
-  return { vehicleValueUsd, goodsValueUsd: vehicleValueUsd, towingCostUsd, oceanFreightUsd, shippingCostUsd, logisticsServiceUsd, paidAmountUsd, totalUsd, balanceUsd, paymentStatus } as const;
+  return { vehicleValueUsd, goodsValueUsd: vehicleValueUsd, towingCostUsd, oceanFreightUsd, shippingCostUsd, logisticsServiceUsd, otherChargesUsd, paidAmountUsd, totalUsd, balanceUsd, paymentStatus } as const;
 }
 
 export function formatUsd(value: number) {

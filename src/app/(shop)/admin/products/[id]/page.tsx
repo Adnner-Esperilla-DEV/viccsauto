@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { addProductCompatibilityAction, removeProductCompatibilityAction } from "@/app/actions/admin";
+import { DeleteProductForm } from "@/components/admin/DeleteProductForm";
 import { ProductEditModal } from "@/components/admin/ProductEditModal";
 import { VehicleCompatibilityFields } from "@/components/automotive/VehicleCompatibilityFields";
 import { requireStaff } from "@/lib/auth";
@@ -146,6 +147,14 @@ export default async function ProductManagementPage({ params, searchParams }: Pa
             ))}
           </div>
         ) : <p className="mt-5 rounded-2xl bg-amber-50 p-4 text-amber-800">Este producto aún no tiene vehículos compatibles.</p>}
+      </section>
+
+      <section className="mt-8 rounded-3xl border border-red-200 bg-white p-7">
+        <h2 className="text-2xl font-black text-red-800">Eliminar producto</h2>
+        <p className="mt-2 text-sm text-slate-600">Se quitará del catálogo y del inventario. Las ventas anteriores conservarán el nombre, SKU y precio registrados.</p>
+        <div className="mt-5">
+          <DeleteProductForm productId={product.id} productName={product.name} />
+        </div>
       </section>
     </main>
   );

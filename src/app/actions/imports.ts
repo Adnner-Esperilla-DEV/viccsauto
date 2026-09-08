@@ -37,6 +37,7 @@ const importDataSchema = z.object({
   oceanFreightUsd: usdAmount,
   shippingCostUsd: usdAmount,
   logisticsServiceUsd: usdAmount,
+  otherChargesUsd: usdAmount,
   paidAmountUsd: usdAmount,
   loadType: optionalText(30),
   destinationPort: optionalText(160),
@@ -151,7 +152,7 @@ export async function createVehicleImportAction(formData: FormData) {
   if (!validParts) importError("invalid");
 
   const goodsValueUsd = parts.reduce((totalCents, part) => totalCents + Math.round(part.unitValueUsd * 100) * part.quantity, 0) / 100;
-  const finance = getImportFinanceSummary({ importType: parsed.data.importType, valueUsd: parsed.data.importType === "PARTS" ? goodsValueUsd : parsed.data.valueUsd, towingCostUsd: parsed.data.towingCostUsd, oceanFreightUsd: parsed.data.oceanFreightUsd, shippingCostUsd: parsed.data.shippingCostUsd, logisticsServiceUsd: parsed.data.logisticsServiceUsd, paidAmountUsd: parsed.data.paidAmountUsd });
+  const finance = getImportFinanceSummary({ importType: parsed.data.importType, valueUsd: parsed.data.importType === "PARTS" ? goodsValueUsd : parsed.data.valueUsd, towingCostUsd: parsed.data.towingCostUsd, oceanFreightUsd: parsed.data.oceanFreightUsd, shippingCostUsd: parsed.data.shippingCostUsd, logisticsServiceUsd: parsed.data.logisticsServiceUsd, otherChargesUsd: parsed.data.otherChargesUsd, paidAmountUsd: parsed.data.paidAmountUsd });
   if (Math.round(finance.paidAmountUsd * 100) > Math.round(finance.totalUsd * 100)) importError("payment");
 
   const zipFile = formData.get("imageZip");
@@ -191,6 +192,7 @@ export async function createVehicleImportAction(formData: FormData) {
         valueUsd: data.importType === "PARTS" ? goodsValueUsd : data.valueUsd ?? null,
         towingCostUsd: data.importType === "VEHICLE" ? data.towingCostUsd : 0, oceanFreightUsd: data.importType === "VEHICLE" ? data.oceanFreightUsd : 0,
         shippingCostUsd: data.importType === "PARTS" ? data.shippingCostUsd : 0, logisticsServiceUsd: data.importType === "PARTS" ? data.logisticsServiceUsd : 0,
+        otherChargesUsd: data.otherChargesUsd,
         paidAmountUsd: data.paidAmountUsd, lotNumber: data.lotNumber, loadType: data.loadType, destinationPort: data.destinationPort,
         receivedDate: data.receivedDate, hazmat: data.hazmat, keyStatus: data.importType === "VEHICLE" ? data.keyStatus : "UNKNOWN",
         titleStatus: data.importType === "VEHICLE" ? data.titleStatus : "PENDING", titleNumber: data.importType === "VEHICLE" ? data.titleNumber : null,
@@ -211,7 +213,7 @@ export async function createVehicleImportAction(formData: FormData) {
     throw error;
   }
 
-  await audit(user.id, "CREATE", vehicleImport.id, { importType: vehicleImport.importType, referenceCode: vehicleImport.referenceCode, vin: vehicleImport.vin, customerId: customer.id, partCount: parts.length, paidAmountUsd: vehicleImport.paidAmountUsd, imageCount: images.length, attachmentCount: attachments.length, initialCustomerNote: Boolean(initialNote) });
+  await audit(user.id, "CREATE", vehicleImport.id, { importType: vehicleImport.importType, referenceCode: vehicleImport.referenceCode, vin: vehicleImport.vin, customerId: customer.id, partCount: parts.length, otherChargesUsd: vehicleImport.otherChargesUsd, paidAmountUsd: vehicleImport.paidAmountUsd, imageCount: images.length, attachmentCount: attachments.length, initialCustomerNote: Boolean(initialNote) });
   revalidatePath("/admin/imports");
   revalidatePath("/imports");
   redirect(`/admin/imports/${vehicleImport.id}?ok=created`);
@@ -240,7 +242,7 @@ export async function updateVehicleImportAction(formData: FormData) {
   if (data.importType === "VEHICLE" && !selectedVehicleModel) redirect(`/admin/imports/${data.id}/edit?error=invalid`);
   if (!validParts) redirect(`/admin/imports/${data.id}/edit?error=invalid`);
   const goodsValueUsd = parts.reduce((totalCents, part) => totalCents + Math.round(part.unitValueUsd * 100) * part.quantity, 0) / 100;
-  const finance = getImportFinanceSummary({ importType: data.importType, valueUsd: data.importType === "PARTS" ? goodsValueUsd : data.valueUsd, towingCostUsd: data.towingCostUsd, oceanFreightUsd: data.oceanFreightUsd, shippingCostUsd: data.shippingCostUsd, logisticsServiceUsd: data.logisticsServiceUsd, paidAmountUsd: data.paidAmountUsd });
+  const finance = getImportFinanceSummary({ importType: data.importType, valueUsd: data.importType === "PARTS" ? goodsValueUsd : data.valueUsd, towingCostUsd: data.towingCostUsd, oceanFreightUsd: data.oceanFreightUsd, shippingCostUsd: data.shippingCostUsd, logisticsServiceUsd: data.logisticsServiceUsd, otherChargesUsd: data.otherChargesUsd, paidAmountUsd: data.paidAmountUsd });
   if (Math.round(finance.paidAmountUsd * 100) > Math.round(finance.totalUsd * 100)) redirect(`/admin/imports/${data.id}/edit?error=payment`);
   const { id } = data;
   try {
@@ -253,6 +255,7 @@ export async function updateVehicleImportAction(formData: FormData) {
         weightKg: data.importType === "VEHICLE" ? data.weightKg : null, valueUsd: data.importType === "PARTS" ? goodsValueUsd : data.valueUsd ?? null,
         towingCostUsd: data.importType === "VEHICLE" ? data.towingCostUsd : 0, oceanFreightUsd: data.importType === "VEHICLE" ? data.oceanFreightUsd : 0,
         shippingCostUsd: data.importType === "PARTS" ? data.shippingCostUsd : 0, logisticsServiceUsd: data.importType === "PARTS" ? data.logisticsServiceUsd : 0,
+        otherChargesUsd: data.otherChargesUsd,
         paidAmountUsd: data.paidAmountUsd, lotNumber: data.lotNumber ?? null, loadType: data.loadType ?? null, destinationPort: data.destinationPort ?? null,
         receivedDate: data.receivedDate ?? null, hazmat: data.hazmat, keyStatus: data.importType === "VEHICLE" ? data.keyStatus : "UNKNOWN",
         titleStatus: data.importType === "VEHICLE" ? data.titleStatus : "PENDING", titleNumber: data.importType === "VEHICLE" ? data.titleNumber ?? null : null,
@@ -267,7 +270,7 @@ export async function updateVehicleImportAction(formData: FormData) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") redirect(`/admin/imports/${id}/edit?error=duplicate`);
     throw error;
   }
-  await audit(user.id, "UPDATE", id, { importType: data.importType, previousCustomerId: existing.customerId, customerId: customer.id, partCount: parts.length, paidAmountUsd: data.paidAmountUsd });
+  await audit(user.id, "UPDATE", id, { importType: data.importType, previousCustomerId: existing.customerId, customerId: customer.id, partCount: parts.length, otherChargesUsd: data.otherChargesUsd, paidAmountUsd: data.paidAmountUsd });
   revalidatePath("/admin/imports");
   revalidatePath(`/admin/imports/${id}`);
   revalidatePath("/imports");
@@ -365,6 +368,57 @@ export async function updateVehicleImportStatusAction(formData: FormData) {
   revalidatePath("/imports");
   revalidatePath(`/imports/${row.id}`);
   redirect(`/admin/imports/${row.id}?ok=status`);
+}
+
+export async function deleteVehicleImportAction(formData: FormData) {
+  const user = await requireStaff();
+  const parsed = z.object({ id: z.string().min(1) }).safeParse(Object.fromEntries(formData));
+  if (!parsed.success) redirect("/admin/imports?error=delete-invalid");
+
+  const item = await db.vehicleImport.findUnique({
+    where: { id: parsed.data.id },
+    select: {
+      id: true,
+      referenceCode: true,
+      importType: true,
+      vin: true,
+      images: { select: { storageKey: true } },
+      attachments: { select: { storageKey: true } },
+    },
+  });
+  if (!item) redirect("/admin/imports?error=delete-not-found");
+  const ip = (await headers()).get("x-forwarded-for")?.split(",")[0];
+
+  try {
+    await db.$transaction(async (tx) => {
+      await tx.vehicleImport.delete({ where: { id: item.id } });
+      await tx.auditLog.create({
+        data: {
+          userId: user.id,
+          action: "DELETE",
+          entity: "VehicleImport",
+          entityId: item.id,
+          details: JSON.stringify({ referenceCode: item.referenceCode, importType: item.importType, vin: item.vin }),
+          ip,
+        },
+      });
+    });
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
+      redirect("/admin/imports?error=delete-not-found");
+    }
+    redirect("/admin/imports?error=delete-failed");
+  }
+
+  await deleteObjectsBestEffort([
+    ...item.images.map((image) => image.storageKey),
+    ...item.attachments.map((attachment) => attachment.storageKey),
+  ]);
+  revalidatePath("/admin/imports");
+  revalidatePath(`/admin/imports/${item.id}`);
+  revalidatePath("/imports");
+  revalidatePath(`/imports/${item.id}`);
+  redirect("/admin/imports?ok=deleted");
 }
 
 export async function addVehicleImportNoteAction(formData: FormData) {

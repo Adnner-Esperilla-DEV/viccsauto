@@ -248,6 +248,7 @@ model VehicleImport {
   oceanFreightUsd     Decimal                   @default(0) @db.Decimal(12, 2)
   shippingCostUsd     Decimal                   @default(0) @db.Decimal(12, 2)
   logisticsServiceUsd Decimal                   @default(0) @db.Decimal(12, 2)
+  otherChargesUsd     Decimal                   @default(0) @db.Decimal(12, 2)
   paidAmountUsd       Decimal                   @default(0) @db.Decimal(12, 2)
   loadType            String?
   destinationPort     String?

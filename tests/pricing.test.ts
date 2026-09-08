@@ -48,3 +48,10 @@ test("una importación de vehículo conserva el valor del vehículo fuera del to
   assert.equal(summary.totalUsd, 1_200);
   assert.equal(summary.balanceUsd, 1_200);
 });
+
+test("otros cargos son opcionales y se suman al total de cualquier importación", () => {
+  const vehicle = getImportFinanceSummary({ importType: "VEHICLE", towingCostUsd: 300, oceanFreightUsd: 900, otherChargesUsd: 125.5, paidAmountUsd: 0 });
+  const parts = getImportFinanceSummary({ importType: "PARTS", valueUsd: 215, towingCostUsd: 0, oceanFreightUsd: 0, shippingCostUsd: 120, logisticsServiceUsd: 75, otherChargesUsd: 25, paidAmountUsd: 0 });
+  assert.equal(vehicle.totalUsd, 1_325.5);
+  assert.equal(parts.totalUsd, 435);
+});

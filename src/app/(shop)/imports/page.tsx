@@ -36,8 +36,8 @@ export default async function CustomerImportsPage() {
   </main>;
 }
 
-function ImportPaymentBadge({ item }: { item: { importType: string; valueUsd: unknown; towingCostUsd: unknown; oceanFreightUsd: unknown; shippingCostUsd: unknown; logisticsServiceUsd: unknown; paidAmountUsd: unknown } }) {
-  const summary = getImportFinanceSummary({ importType: item.importType, valueUsd: Number(item.valueUsd ?? 0), towingCostUsd: Number(item.towingCostUsd), oceanFreightUsd: Number(item.oceanFreightUsd), shippingCostUsd: Number(item.shippingCostUsd), logisticsServiceUsd: Number(item.logisticsServiceUsd), paidAmountUsd: Number(item.paidAmountUsd) });
+function ImportPaymentBadge({ item }: { item: { importType: string; valueUsd: unknown; towingCostUsd: unknown; oceanFreightUsd: unknown; shippingCostUsd: unknown; logisticsServiceUsd: unknown; otherChargesUsd: unknown; paidAmountUsd: unknown } }) {
+  const summary = getImportFinanceSummary({ importType: item.importType, valueUsd: Number(item.valueUsd ?? 0), towingCostUsd: Number(item.towingCostUsd), oceanFreightUsd: Number(item.oceanFreightUsd), shippingCostUsd: Number(item.shippingCostUsd), logisticsServiceUsd: Number(item.logisticsServiceUsd), otherChargesUsd: Number(item.otherChargesUsd), paidAmountUsd: Number(item.paidAmountUsd) });
   const paid = summary.paymentStatus === "PAID";
   return <div className={`mt-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border px-4 py-3 ${paid ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-amber-200 bg-amber-50 text-amber-800"}`}><span className="text-xs font-black uppercase tracking-wider">{paid ? "Pagado" : summary.paymentStatus === "PARTIAL" ? "Pago parcial" : summary.paymentStatus === "UNPRICED" ? "Costos por registrar" : "Pago pendiente"}</span><strong className="text-sm">Saldo: {formatUsd(summary.balanceUsd)}</strong></div>;
 }

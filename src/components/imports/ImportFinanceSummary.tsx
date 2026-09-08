@@ -1,15 +1,16 @@
 import { formatUsd, getImportFinanceSummary } from "@/lib/import-finances";
 
-export function ImportFinanceSummary({ importType = "VEHICLE", valueUsd, towingCostUsd, oceanFreightUsd, shippingCostUsd = 0, logisticsServiceUsd = 0, paidAmountUsd }: {
+export function ImportFinanceSummary({ importType = "VEHICLE", valueUsd, towingCostUsd, oceanFreightUsd, shippingCostUsd = 0, logisticsServiceUsd = 0, otherChargesUsd = 0, paidAmountUsd }: {
   importType?: "VEHICLE" | "PARTS";
   valueUsd?: number | null;
   towingCostUsd: number;
   oceanFreightUsd: number;
   shippingCostUsd?: number;
   logisticsServiceUsd?: number;
+  otherChargesUsd?: number;
   paidAmountUsd: number;
 }) {
-  const summary = getImportFinanceSummary({ importType, valueUsd, towingCostUsd, oceanFreightUsd, shippingCostUsd, logisticsServiceUsd, paidAmountUsd });
+  const summary = getImportFinanceSummary({ importType, valueUsd, towingCostUsd, oceanFreightUsd, shippingCostUsd, logisticsServiceUsd, otherChargesUsd, paidAmountUsd });
   const status = {
     UNPRICED: { label: "Costos por registrar", className: "bg-slate-100 text-slate-700" },
     PENDING: { label: "Pago pendiente", className: "bg-amber-100 text-amber-800" },
@@ -31,11 +32,13 @@ export function ImportFinanceSummary({ importType = "VEHICLE", valueUsd, towingC
           <CostRow label="Valor de los repuestos" value={summary.goodsValueUsd} />
           <CostRow label="Costo de envío" value={summary.shippingCostUsd} />
           <CostRow label="Servicio logístico" value={summary.logisticsServiceUsd} />
+          <CostRow label="Otros cargos" value={summary.otherChargesUsd} />
           <CostRow label="Total de la importación" value={summary.totalUsd} strong />
         </> : <>
           <CostRow label="Valor del vehículo (no incluido)" value={summary.vehicleValueUsd} />
           <CostRow label="Costo de grúa" value={summary.towingCostUsd} />
           <CostRow label="Flete marítimo" value={summary.oceanFreightUsd} />
+          <CostRow label="Otros cargos" value={summary.otherChargesUsd} />
           <CostRow label="Total de servicios en USD" value={summary.totalUsd} strong />
         </>}
       </div>
@@ -43,7 +46,7 @@ export function ImportFinanceSummary({ importType = "VEHICLE", valueUsd, towingC
         <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-800"><span className="text-xs font-bold uppercase tracking-wider">Monto cancelado</span><strong className="mt-1 block text-2xl font-black">{formatUsd(summary.paidAmountUsd)}</strong></div>
         <div className={`rounded-2xl border p-4 ${summary.balanceUsd > 0 ? "border-amber-200 bg-amber-50 text-amber-800" : "border-emerald-200 bg-emerald-50 text-emerald-800"}`}><span className="text-xs font-bold uppercase tracking-wider">Saldo pendiente</span><strong className="mt-1 block text-2xl font-black">{formatUsd(summary.balanceUsd)}</strong></div>
       </div>
-      <p className="border-t border-blue-100 px-6 py-3 text-center text-xs font-semibold text-slate-500">{importType === "PARTS" ? "El total incluye los repuestos, el envío y el servicio logístico." : "El total incluye únicamente grúa y flete marítimo. El valor del vehículo se muestra por separado."} Todos los montos están en USD.</p>
+      <p className="border-t border-blue-100 px-6 py-3 text-center text-xs font-semibold text-slate-500">{importType === "PARTS" ? "El total incluye los repuestos, el envío, el servicio logístico y otros cargos." : "El total incluye grúa, flete marítimo y otros cargos. El valor del vehículo se muestra por separado."} Todos los montos están en USD.</p>
     </section>
   );
 }

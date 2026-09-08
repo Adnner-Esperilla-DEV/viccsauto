@@ -37,7 +37,7 @@ export function ProductEditModal({ product, categories, brands, returnTo = "deta
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className={compact ? "inline-flex items-center gap-1 font-bold text-blue-700 hover:underline" : "inline-flex items-center gap-2 rounded-xl bg-blue-700 px-5 py-3 text-sm font-bold text-white hover:bg-blue-800"}
+        className={compact ? "inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700 transition hover:bg-blue-100" : "inline-flex items-center gap-2 rounded-xl bg-blue-700 px-5 py-3 text-sm font-bold text-white hover:bg-blue-800"}
       >
         <IoCreateOutline aria-hidden="true" /> Editar
       </button>

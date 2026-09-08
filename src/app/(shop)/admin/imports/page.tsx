@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { deleteVehicleImportAction } from "@/app/actions/imports";
+import { DeleteEntityForm } from "@/components/admin/DeleteProductForm";
 import { requireStaff } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { formatUsd, getImportFinanceSummary } from "@/lib/import-finances";
@@ -9,7 +11,7 @@ import { importStatusLabel } from "@/lib/import-status";
 export const dynamic = "force-dynamic";
 const PAGE_SIZE = 20;
 
-export default async function ImportsAdminPage({ searchParams }: { searchParams: Promise<{ page?: string; type?: string }> }) {
+export default async function ImportsAdminPage({ searchParams }: { searchParams: Promise<{ error?: string; ok?: string; page?: string; type?: string }> }) {
   await requireStaff();
   const query = await searchParams;
   const requestedPage = Number(query.page ?? "1");
@@ -49,6 +51,9 @@ export default async function ImportsAdminPage({ searchParams }: { searchParams:
 
       <div className="mt-6 flex flex-wrap gap-2">{[[undefined, "Todas"], ["VEHICLE", "Vehículos"], ["PARTS", "Repuestos"]].map(([value, label]) => <Link key={label} href={value ? `/admin/imports?type=${value}` : "/admin/imports"} className={`rounded-full px-4 py-2 text-sm font-bold ${type === value || (!type && !value) ? "bg-blue-700 text-white" : "border bg-white text-slate-700"}`}>{label}</Link>)}</div>
 
+      {query.ok === "deleted" && <p className="mt-5 rounded-xl bg-emerald-50 p-3 font-semibold text-emerald-800">Importación eliminada correctamente.</p>}
+      {query.error?.startsWith("delete-") && <p role="alert" className="mt-5 rounded-xl bg-red-50 p-3 font-semibold text-red-700">{query.error === "delete-not-found" ? "La importación ya no existe o fue eliminada." : query.error === "delete-invalid" ? "La importación seleccionada no es válida." : "No se pudo eliminar la importación. Intenta nuevamente."}</p>}
+
       <section className="mt-7 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[1240px] border-collapse text-left text-sm">
@@ -74,14 +79,16 @@ export default async function ImportsAdminPage({ searchParams }: { searchParams:
                   oceanFreightUsd: Number(item.oceanFreightUsd),
                   shippingCostUsd: Number(item.shippingCostUsd),
                   logisticsServiceUsd: Number(item.logisticsServiceUsd),
+                  otherChargesUsd: Number(item.otherChargesUsd),
                   paidAmountUsd: Number(item.paidAmountUsd),
                 });
+                const importName = item.importType === "PARTS" ? item.parts[0]?.description ?? "Importación de repuestos" : `${item.year} ${item.make} ${item.model}`;
 
                 return (
                   <tr key={item.id} className="group transition hover:bg-blue-50/50">
                     <Cell>
                       <Link href={`/admin/imports/${item.id}`} className="font-black text-slate-950 hover:text-blue-700 hover:underline">
-                        {item.importType === "PARTS" ? item.parts[0]?.description ?? "Importación de repuestos" : `${item.year} ${item.make} ${item.model}`}
+                        {importName}
                       </Link>
                       <span className="mt-1 block text-xs text-slate-500">
                         {item.importType === "PARTS" ? `${item.referenceCode} · ${item._count.parts} ${item._count.parts === 1 ? "repuesto" : "repuestos"}` : item.lotNumber ? `Lote ${item.lotNumber} · VIN ${item.vin}` : `VIN ${item.vin}`}
@@ -116,9 +123,12 @@ export default async function ImportsAdminPage({ searchParams }: { searchParams:
                       <span className="mt-1 block text-xs text-slate-400">{item.updatedAt.toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" })}</span>
                     </Cell>
                     <Cell align="right">
-                      <Link href={`/admin/imports/${item.id}`} className="inline-flex rounded-lg border border-blue-200 px-3 py-2 text-xs font-black text-blue-700 transition hover:bg-blue-700 hover:text-white">
-                        Ver detalle
-                      </Link>
+                      <div className="flex items-center justify-end gap-3">
+                        <Link href={`/admin/imports/${item.id}`} className="inline-flex rounded-lg border border-blue-200 px-3 py-2 text-xs font-black text-blue-700 transition hover:bg-blue-700 hover:text-white">
+                          Ver detalle
+                        </Link>
+                        <DeleteEntityForm compact action={deleteVehicleImportAction} entityId={item.id} entityName={`${importName} (${item.referenceCode})`} title="¿Eliminar importación?" description="Se borrarán su seguimiento, notas, imágenes, adjuntos y repuestos asociados." />
+                      </div>
                     </Cell>
                   </tr>
                 );

@@ -7,7 +7,8 @@ import {
   IoImageOutline,
 } from "react-icons/io5";
 
-import { updateVehicleStatusAction } from "@/app/actions/admin";
+import { deleteVehicleAction, updateVehicleStatusAction } from "@/app/actions/admin";
+import { DeleteEntityForm } from "@/components/admin/DeleteProductForm";
 import { VehicleModal } from "@/components/admin/VehicleModal";
 import { requireStaff } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -26,6 +27,9 @@ const errorMessages: Record<string, string> = {
   "vehicle-missing": "No encontramos el vehículo que intentas editar.",
   "vehicle-image": "Revisa las imágenes. Puedes guardar un máximo de 10 archivos WebP optimizados.",
   status: "No se pudo actualizar la visibilidad del vehículo.",
+  "vehicle-delete-failed": "No se pudo eliminar el vehículo. Intenta nuevamente.",
+  "vehicle-delete-invalid": "El vehículo que intentas eliminar no es válido.",
+  "vehicle-delete-not-found": "El vehículo ya no existe o fue eliminado.",
 };
 
 const statusLabels: Record<string, string> = {
@@ -64,7 +68,7 @@ export default async function VehiclesAdminPage({ searchParams }: VehiclesAdminP
   const firstResult = total ? (page - 1) * PAGE_SIZE + 1 : 0;
   const lastResult = Math.min(page * PAGE_SIZE, total);
   const errorMessage = query.error ? errorMessages[query.error] : undefined;
-  const creationError = query.edit ? undefined : errorMessage;
+  const creationError = query.edit || query.error?.startsWith("vehicle-delete-") ? undefined : errorMessage;
 
   return (
     <main className="mx-auto w-full max-w-[1500px] px-4 py-10 sm:px-6 lg:px-8">
@@ -83,6 +87,7 @@ export default async function VehiclesAdminPage({ searchParams }: VehiclesAdminP
       {query.ok === "updated" && <p className="mt-6 rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-sm font-semibold text-emerald-800">Vehículo actualizado correctamente.</p>}
       {query.ok === "activated" && <p className="mt-6 rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-sm font-semibold text-emerald-800">Vehículo activado y visible en la tienda.</p>}
       {query.ok === "deactivated" && <p className="mt-6 rounded-2xl border border-amber-100 bg-amber-50 p-4 text-sm font-semibold text-amber-800">Vehículo desactivado y oculto de la tienda.</p>}
+      {query.ok === "deleted" && <p className="mt-6 rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-sm font-semibold text-emerald-800">Vehículo eliminado correctamente.</p>}
 
       <div className="mt-8 grid gap-4">
         {vehicles.map((vehicle) => {
@@ -148,6 +153,14 @@ export default async function VehiclesAdminPage({ searchParams }: VehiclesAdminP
                     featured: vehicle.featured,
                     images: vehicle.images.map((image) => ({ id: image.id, url: `/api/vehicle-images/${image.id}` })),
                   }}
+                />
+                <DeleteEntityForm
+                  compact
+                  action={deleteVehicleAction}
+                  entityId={vehicle.id}
+                  entityName={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
+                  title="¿Eliminar vehículo?"
+                  description="Se quitará de la tienda junto con todas sus imágenes."
                 />
               </div>
             </article>

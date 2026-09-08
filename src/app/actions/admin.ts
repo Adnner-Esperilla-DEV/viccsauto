@@ -300,6 +300,64 @@ export async function toggleProductAction(formData: FormData) {
   revalidatePath("/admin/products"); redirect("/admin/products");
 }
 
+export async function deleteProductAction(formData: FormData) {
+  const user = await staff();
+  const parsed = z.object({ id: z.string().min(1) }).safeParse(Object.fromEntries(formData));
+  if (!parsed.success) redirect("/admin/products?error=delete-invalid");
+
+  const product = await db.product.findUnique({
+    where: { id: parsed.data.id },
+    select: {
+      id: true,
+      name: true,
+      sku: true,
+      slug: true,
+      featured: true,
+      category: { select: { slug: true } },
+      images: { select: { storageKey: true } },
+    },
+  });
+  if (!product) redirect("/admin/products?error=delete-not-found");
+  const ip = (await headers()).get("x-forwarded-for")?.split(",")[0];
+
+  try {
+    await db.$transaction(async (tx) => {
+      // Cart items restrict product deletion. Order items are retained and
+      // disconnected so completed sales keep their historical snapshots.
+      await tx.cartItem.deleteMany({ where: { productId: product.id } });
+      await tx.orderItem.updateMany({ where: { productId: product.id }, data: { productId: null } });
+      await tx.inventoryMovement.deleteMany({ where: { productId: product.id } });
+      await tx.product.delete({ where: { id: product.id } });
+      await tx.auditLog.create({
+        data: {
+          userId: user.id,
+          action: "DELETE",
+          entity: "Product",
+          entityId: product.id,
+          details: JSON.stringify({ name: product.name, sku: product.sku }),
+          ip,
+        },
+      });
+    });
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
+      redirect("/admin/products?error=delete-not-found");
+    }
+    redirect("/admin/products?error=delete-failed");
+  }
+
+  await deleteObjectsBestEffort(product.images.map((image) => image.storageKey));
+
+  revalidatePath("/admin/products");
+  revalidatePath("/admin/inventory");
+  revalidatePath("/products");
+  revalidatePath(`/product/${product.slug}`);
+  revalidatePath(`/category/${product.category.slug}`);
+  revalidatePath("/cart");
+  if (product.featured) revalidatePath("/");
+  redirect("/admin/products?ok=deleted");
+}
+
 export async function createVehicleAction(formData: FormData) {
   const user = await staff();
   const parsed = z.object({
@@ -451,6 +509,47 @@ export async function updateVehicleStatusAction(formData: FormData) {
   revalidatePath(`/vehicle/${row.slug}`);
   revalidatePath("/");
   redirect(`/admin/vehicles?${pageParam}ok=${row.status === "AVAILABLE" ? "activated" : "deactivated"}`);
+}
+
+export async function deleteVehicleAction(formData: FormData) {
+  const user = await staff();
+  const parsed = z.object({ id: z.string().min(1) }).safeParse(Object.fromEntries(formData));
+  if (!parsed.success) redirect("/admin/vehicles?error=vehicle-delete-invalid");
+
+  const vehicle = await db.vehicle.findUnique({
+    where: { id: parsed.data.id },
+    select: { id: true, slug: true, stockNumber: true, year: true, make: true, model: true, images: { select: { storageKey: true } } },
+  });
+  if (!vehicle) redirect("/admin/vehicles?error=vehicle-delete-not-found");
+  const ip = (await headers()).get("x-forwarded-for")?.split(",")[0];
+
+  try {
+    await db.$transaction(async (tx) => {
+      await tx.vehicle.delete({ where: { id: vehicle.id } });
+      await tx.auditLog.create({
+        data: {
+          userId: user.id,
+          action: "DELETE",
+          entity: "Vehicle",
+          entityId: vehicle.id,
+          details: JSON.stringify({ stockNumber: vehicle.stockNumber, name: `${vehicle.year} ${vehicle.make} ${vehicle.model}` }),
+          ip,
+        },
+      });
+    });
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
+      redirect("/admin/vehicles?error=vehicle-delete-not-found");
+    }
+    redirect("/admin/vehicles?error=vehicle-delete-failed");
+  }
+
+  await deleteObjectsBestEffort(vehicle.images.map((image) => image.storageKey));
+  revalidatePath("/admin/vehicles");
+  revalidatePath("/vehicles");
+  revalidatePath(`/vehicle/${vehicle.slug}`);
+  revalidatePath("/");
+  redirect("/admin/vehicles?ok=deleted");
 }
 
 export async function adjustInventoryAction(formData: FormData) {

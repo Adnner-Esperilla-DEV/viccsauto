@@ -1,0 +1,2 @@
+ALTER TABLE "VehicleImport"
+ADD COLUMN "otherChargesUsd" DECIMAL(12,2) NOT NULL DEFAULT 0;

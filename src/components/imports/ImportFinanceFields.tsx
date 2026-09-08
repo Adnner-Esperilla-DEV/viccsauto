@@ -7,6 +7,7 @@ type ImportFinanceFieldsProps = {
   initialValueUsd?: string;
   initialTowingCostUsd?: string;
   initialOceanFreightUsd?: string;
+  initialOtherChargesUsd?: string;
   initialPaidAmountUsd?: string;
 };
 
@@ -19,20 +20,24 @@ export function ImportFinanceFields({
   initialValueUsd = "",
   initialTowingCostUsd = "",
   initialOceanFreightUsd = "",
+  initialOtherChargesUsd = "",
   initialPaidAmountUsd = "",
 }: ImportFinanceFieldsProps) {
   const [valueUsd, setValueUsd] = useState(initialValueUsd);
   const [towingCostUsd, setTowingCostUsd] = useState(initialTowingCostUsd);
   const [oceanFreightUsd, setOceanFreightUsd] = useState(initialOceanFreightUsd);
+  const [otherChargesUsd, setOtherChargesUsd] = useState(initialOtherChargesUsd);
   const [paidAmountUsd, setPaidAmountUsd] = useState(initialPaidAmountUsd);
   const summary = useMemo(() => getImportFinanceSummary({
     valueUsd: amount(valueUsd),
     towingCostUsd: amount(towingCostUsd),
     oceanFreightUsd: amount(oceanFreightUsd),
+    otherChargesUsd: amount(otherChargesUsd),
     paidAmountUsd: amount(paidAmountUsd),
-  }), [valueUsd, towingCostUsd, oceanFreightUsd, paidAmountUsd]);
+  }), [valueUsd, towingCostUsd, oceanFreightUsd, otherChargesUsd, paidAmountUsd]);
   const field = "mt-2 w-full rounded-xl border border-blue-200 bg-white px-4 py-3 font-normal outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-100";
   const label = "text-sm font-bold text-slate-700";
+  const financeLabel = `${label} flex h-full flex-col justify-end`;
 
   return (
     <section className="overflow-hidden rounded-3xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 via-white to-emerald-50 shadow-sm">
@@ -47,17 +52,20 @@ export function ImportFinanceFields({
         <p className="mt-2 text-sm text-slate-600">Todos los importes se registran en dólares estadounidenses. El valor del vehículo es informativo y no se suma al total a cancelar.</p>
       </div>
 
-      <div className="grid gap-4 p-6 sm:grid-cols-2 lg:grid-cols-4">
-        <label className={label}>Valor del vehículo (USD)
+      <div className="grid gap-4 p-6 sm:grid-cols-2 lg:grid-cols-5">
+        <label className={financeLabel}>Valor del vehículo (USD)
           <input type="number" min="0" step="0.01" name="valueUsd" value={valueUsd} onChange={(event) => setValueUsd(event.target.value)} placeholder="0.00" className={field} />
         </label>
-        <label className={label}>Costo de grúa (USD)
+        <label className={financeLabel}>Costo de grúa (USD)
           <input type="number" min="0" step="0.01" name="towingCostUsd" value={towingCostUsd} onChange={(event) => setTowingCostUsd(event.target.value)} placeholder="0.00" className={field} />
         </label>
-        <label className={label}>Flete marítimo (USD)
+        <label className={financeLabel}>Flete marítimo (USD)
           <input type="number" min="0" step="0.01" name="oceanFreightUsd" value={oceanFreightUsd} onChange={(event) => setOceanFreightUsd(event.target.value)} placeholder="0.00" className={field} />
         </label>
-        <label className={label}>Monto cancelado (USD)
+        <label className={financeLabel}><span>Otros cargos (USD) <span className="font-normal text-slate-400">(opcional)</span></span>
+          <input type="number" min="0" step="0.01" name="otherChargesUsd" value={otherChargesUsd} onChange={(event) => setOtherChargesUsd(event.target.value)} placeholder="0.00" className={field} />
+        </label>
+        <label className={financeLabel}>Monto cancelado (USD)
           <input type="number" min="0" max={summary.totalUsd} step="0.01" name="paidAmountUsd" value={paidAmountUsd} onChange={(event) => setPaidAmountUsd(event.target.value)} placeholder="0.00" className={field} />
         </label>
       </div>

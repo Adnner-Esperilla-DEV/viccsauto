@@ -1,10 +1,11 @@
 import type { Prisma } from "@prisma/client";
 import Link from "next/link";
-import { IoChevronBackOutline, IoChevronForwardOutline, IoImageOutline, IoSearchOutline } from "react-icons/io5";
+import { IoCarSportOutline, IoChevronBackOutline, IoChevronForwardOutline, IoEyeOffOutline, IoEyeOutline, IoImageOutline, IoSearchOutline } from "react-icons/io5";
 
 import { toggleProductAction } from "@/app/actions/admin";
 import { ProductCompatibilityModal } from "@/components/admin/ProductCompatibilityModal";
 import { ProductCreateModal } from "@/components/admin/ProductCreateModal";
+import { DeleteProductForm } from "@/components/admin/DeleteProductForm";
 import { ProductEditModal } from "@/components/admin/ProductEditModal";
 import { requireStaff } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -29,6 +30,9 @@ const errorMessages: Record<string, string> = {
   "product-featured-image": "Un producto destacado necesita al menos una imagen.",
   "product-image": "No se pudieron guardar las imágenes del producto.",
   "product-invalid": "Revisa los datos del producto antes de guardar.",
+  "delete-failed": "No se pudo eliminar el producto. Intenta nuevamente.",
+  "delete-invalid": "El producto que intentas eliminar no es válido.",
+  "delete-not-found": "El producto ya no existe o fue eliminado.",
 };
 
 function oemText(value: string) {
@@ -124,7 +128,7 @@ export default async function ProductsAdminPage({ searchParams }: ProductsAdminP
   const firstResult = total ? (page - 1) * PAGE_SIZE + 1 : 0;
   const lastResult = Math.min(page * PAGE_SIZE, total);
   const errorMessage = query.error ? errorMessages[query.error] : undefined;
-  const creationError = query.edit || query.compat ? undefined : errorMessage;
+  const creationError = query.edit || query.compat || query.error?.startsWith("delete-") ? undefined : errorMessage;
 
   return (
     <main className="mx-auto w-full max-w-[1600px] px-4 py-10 sm:px-6 lg:px-8">
@@ -140,6 +144,7 @@ export default async function ProductsAdminPage({ searchParams }: ProductsAdminP
       {errorMessage && <p role="alert" className="mt-6 rounded-2xl border border-red-100 bg-red-50 p-4 text-sm font-semibold text-red-700">{errorMessage}</p>}
       {query.ok === "created" && <p className="mt-6 rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-sm font-semibold text-emerald-800">Producto creado correctamente.</p>}
       {query.ok === "updated" && <p className="mt-6 rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-sm font-semibold text-emerald-800">Producto actualizado correctamente.</p>}
+      {query.ok === "deleted" && <p className="mt-6 rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-sm font-semibold text-emerald-800">Producto eliminado correctamente.</p>}
 
       <section className="mt-8 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 p-5 sm:p-6">
@@ -208,7 +213,7 @@ export default async function ProductsAdminPage({ searchParams }: ProductsAdminP
                     <span className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${product.isActive ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>{product.isActive ? "Activo" : "Inactivo"}</span>
                   </td>
                   <td className="px-6 py-3">
-                    <div className="flex items-center justify-end gap-4">
+                    <div className="flex flex-wrap items-center justify-end gap-2">
                       <ProductEditModal
                         compact
                         returnTo="list"
@@ -237,12 +242,18 @@ export default async function ProductsAdminPage({ searchParams }: ProductsAdminP
                           images: product.images.map((image) => ({ id: image.id, url: `/api/product-images/${image.id}` })),
                         }}
                       />
-                      <Link href={compatibilityHref(product.id)} className="font-bold text-slate-600 hover:text-slate-950 hover:underline">Compatibilidad ({product._count.compatibility})</Link>
+                      <Link href={compatibilityHref(product.id)} className="inline-flex items-center gap-1.5 rounded-lg border border-violet-200 bg-violet-50 px-3 py-2 text-xs font-bold text-violet-700 transition hover:bg-violet-100">
+                        <IoCarSportOutline className="h-4 w-4" aria-hidden="true" /> Compatibilidad ({product._count.compatibility})
+                      </Link>
                       <form action={toggleProductAction}>
                         <input type="hidden" name="id" value={product.id} />
                         <input type="hidden" name="active" value={String(!product.isActive)} />
-                        <button className="font-bold text-slate-600 hover:text-slate-950">{product.isActive ? "Desactivar" : "Activar"}</button>
+                        <button className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-bold transition ${product.isActive ? "border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100" : "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"}`}>
+                          {product.isActive ? <IoEyeOffOutline className="h-4 w-4" aria-hidden="true" /> : <IoEyeOutline className="h-4 w-4" aria-hidden="true" />}
+                          {product.isActive ? "Desactivar" : "Activar"}
+                        </button>
                       </form>
+                      <DeleteProductForm compact productId={product.id} productName={product.name} />
                     </div>
                   </td>
                 </tr>

@@ -46,6 +46,7 @@ type FinanceValues = {
   oceanFreightUsd?: string;
   shippingCostUsd?: string;
   logisticsServiceUsd?: string;
+  otherChargesUsd?: string;
   paidAmountUsd?: string;
 };
 
@@ -54,6 +55,7 @@ const keyOptions = [{ value: "NO_KEY", label: "Sin llave" }, { value: "UNKNOWN",
 const titleOptions = [{ value: "NO_TITLE", label: "Sin título" }, { value: "PENDING", label: "Pendiente" }, { value: "RECEIVED", label: "Título recibido" }];
 const field = "mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 font-normal outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-100";
 const label = "text-sm font-bold text-slate-700";
+const financeLabel = `${label} flex h-full flex-col justify-end`;
 
 function newPart(id?: string): ImportedPartDraft {
   const year = new Date().getFullYear();
@@ -72,9 +74,10 @@ export function ImportTypeFields({ makes, initialType = "VEHICLE", initialVehicl
   const [parts, setParts] = useState<ImportedPartDraft[]>(initialParts.length ? initialParts : [newPart("part-1")]);
   const [shippingCostUsd, setShippingCostUsd] = useState(initialFinance.shippingCostUsd ?? "");
   const [logisticsServiceUsd, setLogisticsServiceUsd] = useState(initialFinance.logisticsServiceUsd ?? "");
+  const [otherChargesUsd, setOtherChargesUsd] = useState(initialFinance.otherChargesUsd ?? "");
   const [paidAmountUsd, setPaidAmountUsd] = useState(initialFinance.paidAmountUsd ?? "");
   const goodsValueUsd = useMemo(() => parts.reduce((totalCents, part) => totalCents + Math.round(Math.max(0, Number(part.unitValueUsd) || 0) * 100) * Math.max(0, Number(part.quantity) || 0), 0) / 100, [parts]);
-  const finance = getImportFinanceSummary({ importType: "PARTS", valueUsd: goodsValueUsd, towingCostUsd: 0, oceanFreightUsd: 0, shippingCostUsd: Number(shippingCostUsd) || 0, logisticsServiceUsd: Number(logisticsServiceUsd) || 0, paidAmountUsd: Number(paidAmountUsd) || 0 });
+  const finance = getImportFinanceSummary({ importType: "PARTS", valueUsd: goodsValueUsd, towingCostUsd: 0, oceanFreightUsd: 0, shippingCostUsd: Number(shippingCostUsd) || 0, logisticsServiceUsd: Number(logisticsServiceUsd) || 0, otherChargesUsd: Number(otherChargesUsd) || 0, paidAmountUsd: Number(paidAmountUsd) || 0 });
 
   function updatePart(id: string, changes: Partial<ImportedPartDraft>) {
     setParts((current) => current.map((part) => part.id === id ? { ...part, ...changes } : part));
@@ -99,7 +102,7 @@ export function ImportTypeFields({ makes, initialType = "VEHICLE", initialVehicl
         <label className={label}>Peso (kg) <span className="font-normal text-slate-400">(opcional)</span><input type="number" min="0.01" step="0.01" name="weightKg" defaultValue={initialVehicle.weightKg ?? ""} className={field}/></label>
         <StyledSelect name="fuel" label="Combustible" defaultValue={initialVehicle.fuel ?? "Desconocido"} options={fuelOptions}/>
       </section>
-      <ImportFinanceFields initialValueUsd={initialFinance.valueUsd} initialTowingCostUsd={initialFinance.towingCostUsd} initialOceanFreightUsd={initialFinance.oceanFreightUsd} initialPaidAmountUsd={initialFinance.paidAmountUsd}/>
+      <ImportFinanceFields initialValueUsd={initialFinance.valueUsd} initialTowingCostUsd={initialFinance.towingCostUsd} initialOceanFreightUsd={initialFinance.oceanFreightUsd} initialOtherChargesUsd={initialFinance.otherChargesUsd} initialPaidAmountUsd={initialFinance.paidAmountUsd}/>
       <input type="hidden" name="shippingCostUsd" value="0"/><input type="hidden" name="logisticsServiceUsd" value="0"/><input type="hidden" name="partsJson" value="[]"/>
       <section className="grid gap-4 rounded-3xl bg-white p-6 shadow-sm sm:grid-cols-2 lg:grid-cols-3">
         <h2 className="text-xl font-black sm:col-span-2 lg:col-span-3">Título y llaves</h2>
@@ -116,12 +119,13 @@ export function ImportTypeFields({ makes, initialType = "VEHICLE", initialVehicl
         <div className="mt-5 grid gap-5">{parts.map((part, index) => <PartFields key={part.id} part={part} index={index} makes={makes} update={(changes) => updatePart(part.id, changes)} remove={parts.length > 1 ? () => setParts((current) => current.filter((item) => item.id !== part.id)) : undefined}/>)}</div>
       </section>
       <section className="overflow-hidden rounded-3xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 via-white to-emerald-50 shadow-sm">
-        <div className="border-b border-blue-100 px-6 py-5"><p className="text-xs font-black uppercase tracking-[0.18em] text-blue-700">Costos y pagos</p><h2 className="mt-1 text-2xl font-black">Resumen financiero de la importación</h2><p className="mt-2 text-sm text-slate-600">El total incluye el valor de las piezas, el envío y el servicio logístico. Todo se registra en USD.</p></div>
-        <div className="grid gap-4 p-6 sm:grid-cols-2 lg:grid-cols-4">
-          <label className={label}>Valor de los repuestos<input readOnly value={goodsValueUsd.toFixed(2)} className={`${field} bg-slate-100`}/></label>
-          <label className={label}>Costo de envío (USD)<input required type="number" min="0" step="0.01" name="shippingCostUsd" value={shippingCostUsd} onChange={(event) => setShippingCostUsd(event.target.value)} className={field}/></label>
-          <label className={label}>Servicio logístico (USD)<input required type="number" min="0" step="0.01" name="logisticsServiceUsd" value={logisticsServiceUsd} onChange={(event) => setLogisticsServiceUsd(event.target.value)} className={field}/></label>
-          <label className={label}>Monto cancelado (USD)<input required type="number" min="0" max={finance.totalUsd} step="0.01" name="paidAmountUsd" value={paidAmountUsd} onChange={(event) => setPaidAmountUsd(event.target.value)} className={field}/></label>
+        <div className="border-b border-blue-100 px-6 py-5"><p className="text-xs font-black uppercase tracking-[0.18em] text-blue-700">Costos y pagos</p><h2 className="mt-1 text-2xl font-black">Resumen financiero de la importación</h2><p className="mt-2 text-sm text-slate-600">El total incluye el valor de las piezas, el envío, el servicio logístico y otros cargos. Todo se registra en USD.</p></div>
+        <div className="grid gap-4 p-6 sm:grid-cols-2 lg:grid-cols-5">
+          <label className={financeLabel}>Valor de los repuestos<input readOnly value={goodsValueUsd.toFixed(2)} className={`${field} bg-slate-100`}/></label>
+          <label className={financeLabel}>Costo de envío (USD)<input required type="number" min="0" step="0.01" name="shippingCostUsd" value={shippingCostUsd} onChange={(event) => setShippingCostUsd(event.target.value)} className={field}/></label>
+          <label className={financeLabel}>Servicio logístico (USD)<input required type="number" min="0" step="0.01" name="logisticsServiceUsd" value={logisticsServiceUsd} onChange={(event) => setLogisticsServiceUsd(event.target.value)} className={field}/></label>
+          <label className={financeLabel}><span>Otros cargos (USD) <span className="font-normal text-slate-400">(opcional)</span></span><input type="number" min="0" step="0.01" name="otherChargesUsd" value={otherChargesUsd} onChange={(event) => setOtherChargesUsd(event.target.value)} placeholder="0.00" className={field}/></label>
+          <label className={financeLabel}>Monto cancelado (USD)<input required type="number" min="0" max={finance.totalUsd} step="0.01" name="paidAmountUsd" value={paidAmountUsd} onChange={(event) => setPaidAmountUsd(event.target.value)} className={field}/></label>
         </div>
         <div className="grid gap-3 border-t border-blue-100 bg-white/70 p-6 sm:grid-cols-3"><FinanceCard label="Total de importación" value={finance.totalUsd}/><FinanceCard label="Cancelado" value={finance.paidAmountUsd}/><FinanceCard label="Saldo pendiente" value={finance.balanceUsd}/></div>
       </section>
