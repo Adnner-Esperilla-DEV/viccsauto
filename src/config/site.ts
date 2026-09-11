@@ -9,5 +9,5 @@ export const siteConfig = {
   phone: "+56 9 5381 9066",
   whatsapp: "56953819066",
   email: "ventas@viccsauto.cl",
-  address: "Benjamín Vicuña Mackenna 848, Arica, Chile",
+  address: "Bilbao 1266, al lado de Abastible (entre Azolas y Bilbao), Arica, Chile",
 } as const;

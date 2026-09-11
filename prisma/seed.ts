@@ -40,8 +40,16 @@ async function main() {
 
   const location = await prisma.inventoryLocation.upsert({
     where: { code: "ARICA-CENTRO" },
-    update: { name: "Bodega Arica Centro", isActive: true },
-    create: { code: "ARICA-CENTRO", name: "Bodega Arica Centro", address: "Benjamín Vicuña Mackenna 848, Arica" },
+    update: {
+      name: "Bodega Arica Centro",
+      address: "Bilbao 1266, al lado de Abastible (entre Azolas y Bilbao), Arica",
+      isActive: true,
+    },
+    create: {
+      code: "ARICA-CENTRO",
+      name: "Bodega Arica Centro",
+      address: "Bilbao 1266, al lado de Abastible (entre Azolas y Bilbao), Arica",
+    },
   });
 
   for (const [position, category] of categories.entries()) {
