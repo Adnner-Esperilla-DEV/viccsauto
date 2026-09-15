@@ -119,6 +119,7 @@ export default async function ImportsAdminPage({
           label="Buscar importaciones por cliente"
           required={false}
           className="min-w-0"
+          showHelper={false}
         />
         <button className="rounded-xl bg-blue-700 px-5 py-3 font-bold text-white hover:bg-blue-800">Filtrar</button>
         <Link

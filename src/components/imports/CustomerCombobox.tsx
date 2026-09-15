@@ -30,6 +30,7 @@ export function CustomerCombobox({
   label = "Cliente asignado",
   required = true,
   className = "sm:col-span-2 lg:col-span-3",
+  showHelper = true,
 }: {
   customers: CustomerOption[];
   initialCustomerId?: string;
@@ -37,6 +38,7 @@ export function CustomerCombobox({
   label?: string;
   required?: boolean;
   className?: string;
+  showHelper?: boolean;
 }) {
   const listId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -164,15 +166,16 @@ export function CustomerCombobox({
           </div>
         )}
       </div>
-      {selected ? (
-        <p className="mt-2 flex items-center gap-1 text-sm font-semibold text-emerald-700">
-          <IoCheckmarkOutline aria-hidden="true" /> Seleccionado: {customerName(selected)}
-        </p>
-      ) : required ? (
-        <p className="mt-2 text-xs text-slate-500">Debes seleccionar una coincidencia de la lista.</p>
-      ) : (
-        <p className="mt-2 text-xs text-slate-500">Sin selección se muestran todos los clientes.</p>
-      )}
+      {showHelper &&
+        (selected ? (
+          <p className="mt-2 flex items-center gap-1 text-sm font-semibold text-emerald-700">
+            <IoCheckmarkOutline aria-hidden="true" /> Seleccionado: {customerName(selected)}
+          </p>
+        ) : required ? (
+          <p className="mt-2 text-xs text-slate-500">Debes seleccionar una coincidencia de la lista.</p>
+        ) : (
+          <p className="mt-2 text-xs text-slate-500">Sin selección se muestran todos los clientes.</p>
+        ))}
     </div>
   );
 }
