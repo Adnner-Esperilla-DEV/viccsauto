@@ -11,14 +11,18 @@ export type ImportFinanceValues = {
 
 const usdFormatter = new Intl.NumberFormat("es-CL", { style: "currency", currency: "USD" });
 
+function validAmount(value: number | null | undefined) {
+  return typeof value === "number" && Number.isFinite(value) ? Math.max(0, value) : 0;
+}
+
 export function getImportFinanceSummary(values: ImportFinanceValues) {
-  const vehicleValueUsd = Math.max(0, values.valueUsd ?? 0);
-  const towingCostUsd = Math.max(0, values.towingCostUsd);
-  const oceanFreightUsd = Math.max(0, values.oceanFreightUsd);
-  const shippingCostUsd = Math.max(0, values.shippingCostUsd ?? 0);
-  const logisticsServiceUsd = Math.max(0, values.logisticsServiceUsd ?? 0);
-  const otherChargesUsd = Math.max(0, values.otherChargesUsd ?? 0);
-  const paidAmountUsd = Math.max(0, values.paidAmountUsd);
+  const vehicleValueUsd = validAmount(values.valueUsd);
+  const towingCostUsd = validAmount(values.towingCostUsd);
+  const oceanFreightUsd = validAmount(values.oceanFreightUsd);
+  const shippingCostUsd = validAmount(values.shippingCostUsd);
+  const logisticsServiceUsd = validAmount(values.logisticsServiceUsd);
+  const otherChargesUsd = validAmount(values.otherChargesUsd);
+  const paidAmountUsd = validAmount(values.paidAmountUsd);
   const totalCents =
     values.importType === "PARTS"
       ? Math.round(vehicleValueUsd * 100) +

@@ -1,7 +1,9 @@
 import Link from "next/link";
+import type { Prisma as PrismaTypes } from "@prisma/client";
 import { redirect } from "next/navigation";
 
 import { deleteVehicleImportAction } from "@/app/actions/imports";
+import { CustomerCombobox } from "@/components";
 import { DeleteEntityForm } from "@/components/admin/DeleteProductForm";
 import { requireStaff } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -11,20 +13,46 @@ import { importStatusLabel } from "@/lib/import-status";
 export const dynamic = "force-dynamic";
 const PAGE_SIZE = 20;
 
+function importsHref({ page, type, customerId }: { page?: number; type?: string; customerId?: string }) {
+  const params = new URLSearchParams();
+  if (page && page > 1) params.set("page", String(page));
+  if (type) params.set("type", type);
+  if (customerId) params.set("customer", customerId);
+  const query = params.toString();
+  return `/admin/imports${query ? `?${query}` : ""}`;
+}
+
 export default async function ImportsAdminPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; ok?: string; page?: string; type?: string }>;
+  searchParams: Promise<{ customer?: string; error?: string; ok?: string; page?: string; type?: string }>;
 }) {
   await requireStaff();
   const query = await searchParams;
   const requestedPage = Number(query.page ?? "1");
   const page = Number.isInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1;
   const type = query.type === "VEHICLE" || query.type === "PARTS" ? query.type : undefined;
-  const where = type ? { importType: type } : {};
-  const total = await db.vehicleImport.count({ where });
+  const customers = await db.user.findMany({
+    where: { role: "CUSTOMER", vehicleImports: { some: {} } },
+    orderBy: [{ firstName: "asc" }, { lastName: "asc" }],
+    select: { id: true, firstName: true, lastName: true, email: true, phone: true },
+  });
+  const selectedCustomer = customers.find((customer) => customer.id === query.customer);
+  const customerId = selectedCustomer?.id;
+  const where: PrismaTypes.VehicleImportWhereInput = {
+    ...(type ? { importType: type } : {}),
+    ...(customerId ? { customerId } : {}),
+  };
+  const [total, customerImports] = await Promise.all([
+    db.vehicleImport.count({ where }),
+    customerId
+      ? db.vehicleImport.findMany({
+          where: { customerId },
+        })
+      : Promise.resolve([]),
+  ]);
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-  if (page > totalPages) redirect(`/admin/imports?page=${totalPages}${type ? `&type=${type}` : ""}`);
+  if (page > totalPages) redirect(importsHref({ page: totalPages, type, customerId }));
 
   const imports = await db.vehicleImport.findMany({
     include: {
@@ -39,6 +67,27 @@ export default async function ImportsAdminPage({
   });
   const firstItem = total ? (page - 1) * PAGE_SIZE + 1 : 0;
   const lastItem = Math.min(page * PAGE_SIZE, total);
+  const customerTotals = customerImports.reduce(
+    (totals, item) => {
+      const finance = getImportFinanceSummary({
+        importType: item.importType,
+        valueUsd: Number(item.valueUsd ?? 0),
+        towingCostUsd: Number(item.towingCostUsd),
+        oceanFreightUsd: Number(item.oceanFreightUsd),
+        shippingCostUsd: Number(item.shippingCostUsd),
+        logisticsServiceUsd: Number(item.logisticsServiceUsd),
+        otherChargesUsd: Number(
+          (item as unknown as { otherChargesUsd?: PrismaTypes.Decimal }).otherChargesUsd ?? 0,
+        ),
+        paidAmountUsd: Number(item.paidAmountUsd),
+      });
+      totals.totalCents += Math.round(finance.totalUsd * 100);
+      totals.paidCents += Math.round(finance.paidAmountUsd * 100);
+      totals.balanceCents += Math.round(finance.balanceUsd * 100);
+      return totals;
+    },
+    { totalCents: 0, paidCents: 0, balanceCents: 0 },
+  );
 
   return (
     <main className="mx-auto max-w-[1500px] px-4 py-8 sm:px-6">
@@ -56,6 +105,52 @@ export default async function ImportsAdminPage({
         </Link>
       </div>
 
+      <form
+        action="/admin/imports"
+        method="get"
+        className="mt-6 grid items-end gap-3 rounded-2xl border border-blue-100 bg-blue-50/50 p-4 md:grid-cols-[minmax(0,1fr)_auto_auto]"
+      >
+        {type && <input type="hidden" name="type" value={type} />}
+        <CustomerCombobox
+          key={customerId ?? "all"}
+          customers={customers}
+          initialCustomerId={customerId}
+          name="customer"
+          label="Buscar importaciones por cliente"
+          required={false}
+          className="min-w-0"
+        />
+        <button className="rounded-xl bg-blue-700 px-5 py-3 font-bold text-white hover:bg-blue-800">Filtrar</button>
+        <Link
+          href={importsHref({ type })}
+          className="rounded-xl border border-slate-300 bg-white px-5 py-3 text-center font-bold text-slate-700 hover:bg-slate-50"
+        >
+          Ver todos
+        </Link>
+      </form>
+
+      {selectedCustomer && (
+        <section className="mt-5 rounded-2xl border border-blue-200 bg-white p-5 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <p className="text-xs font-black uppercase tracking-wider text-blue-700">Resumen del cliente</p>
+              <h2 className="mt-1 text-xl font-black">
+                {selectedCustomer.firstName} {selectedCustomer.lastName}
+              </h2>
+              <p className="text-sm text-slate-500">{selectedCustomer.email}</p>
+            </div>
+            <span className="rounded-full bg-blue-100 px-3 py-1 text-sm font-bold text-blue-800">
+              {customerImports.length} {customerImports.length === 1 ? "importación" : "importaciones"}
+            </span>
+          </div>
+          <div className="mt-4 grid gap-3 sm:grid-cols-3">
+            <CustomerTotal label="Total acumulado" value={customerTotals.totalCents / 100} />
+            <CustomerTotal label="Total pagado" value={customerTotals.paidCents / 100} tone="paid" />
+            <CustomerTotal label="Deuda total" value={customerTotals.balanceCents / 100} tone="debt" />
+          </div>
+        </section>
+      )}
+
       <div className="mt-6 flex flex-wrap gap-2">
         {[
           [undefined, "Todas"],
@@ -64,7 +159,7 @@ export default async function ImportsAdminPage({
         ].map(([value, label]) => (
           <Link
             key={label}
-            href={value ? `/admin/imports?type=${value}` : "/admin/imports"}
+            href={importsHref({ type: value, customerId })}
             className={`rounded-full px-4 py-2 text-sm font-bold ${type === value || (!type && !value) ? "bg-blue-700 text-white" : "border bg-white text-slate-700"}`}
           >
             {label}
@@ -211,7 +306,9 @@ export default async function ImportsAdminPage({
               {!imports.length && (
                 <tr>
                   <td colSpan={9} className="px-6 py-16 text-center text-slate-500">
-                    Todavía no hay importaciones registradas.
+                    {selectedCustomer
+                      ? "Este cliente no tiene importaciones con los filtros seleccionados."
+                      : "Todavía no hay importaciones registradas."}
                   </td>
                 </tr>
               )}
@@ -235,7 +332,7 @@ export default async function ImportsAdminPage({
           <div className="flex items-center gap-2">
             {page > 1 ? (
               <Link
-                href={`/admin/imports?page=${page - 1}${type ? `&type=${type}` : ""}`}
+                href={importsHref({ page: page - 1, type, customerId })}
                 className="rounded-xl border px-4 py-2 text-sm font-bold text-slate-700 hover:border-blue-300 hover:bg-blue-50"
               >
                 ← Anterior
@@ -253,7 +350,7 @@ export default async function ImportsAdminPage({
             </span>
             {page < totalPages ? (
               <Link
-                href={`/admin/imports?page=${page + 1}${type ? `&type=${type}` : ""}`}
+                href={importsHref({ page: page + 1, type, customerId })}
                 className="rounded-xl border px-4 py-2 text-sm font-bold text-slate-700 hover:border-blue-300 hover:bg-blue-50"
               >
                 Siguiente →
@@ -290,4 +387,29 @@ function Cell({ children, align = "left" }: { children: React.ReactNode; align?:
 
 function Money({ value }: { value: number }) {
   return <span className="whitespace-nowrap font-bold tabular-nums text-slate-800">{formatUsd(value)}</span>;
+}
+
+function CustomerTotal({
+  label,
+  value,
+  tone = "default",
+}: {
+  label: string;
+  value: number;
+  tone?: "default" | "paid" | "debt";
+}) {
+  const colors = {
+    default: "border-blue-100 bg-blue-50 text-blue-900",
+    paid: "border-emerald-100 bg-emerald-50 text-emerald-800",
+    debt:
+      value > 0
+        ? "border-amber-200 bg-amber-50 text-amber-900"
+        : "border-emerald-100 bg-emerald-50 text-emerald-800",
+  };
+  return (
+    <div className={`rounded-xl border p-4 ${colors[tone]}`}>
+      <span className="text-xs font-bold uppercase tracking-wider opacity-70">{label}</span>
+      <strong className="mt-1 block text-xl font-black tabular-nums">{formatUsd(value)}</strong>
+    </div>
+  );
 }

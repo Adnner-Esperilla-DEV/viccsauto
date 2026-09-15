@@ -91,8 +91,8 @@ export default async function AdminImportDetailPage({
       )}
       {query.error && (
         <p role="alert" className="mt-5 rounded-xl bg-red-50 p-3 font-semibold text-red-700">
-          {query.error === "zip"
-            ? "El ZIP debe ser válido, pesar máximo 30 MB y contener imágenes JPG, PNG o WebP."
+          {query.error === "zip" || query.error === "images"
+            ? "Selecciona un ZIP o imágenes JPG, PNG o WebP válidas (máximo 30 MB en total)."
             : query.error === "attachments"
               ? "Selecciona entre 1 y 5 archivos PDF o imágenes de máximo 5 MB cada uno."
               : "No se pudo modificar el archivo solicitado."}
@@ -129,15 +129,16 @@ export default async function AdminImportDetailPage({
                 <input type="hidden" name="importId" value={item.id} />
                 <input
                   required
+                  multiple
                   type="file"
-                  name="imageZip"
-                  accept=".zip,application/zip"
+                  name="imageFiles"
+                  accept=".zip,application/zip,image/jpeg,image/png,image/webp"
                   className="min-w-0 flex-1 rounded-xl border bg-white px-3 py-2 text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-blue-50 file:px-3 file:py-2 file:font-bold file:text-blue-700"
                 />
-                <button className="rounded-xl bg-blue-700 px-4 py-2 font-bold text-white">Añadir ZIP</button>
+                <button className="rounded-xl bg-blue-700 px-4 py-2 font-bold text-white">Añadir imágenes</button>
               </form>
               <p className="mt-2 text-xs text-slate-500">
-                Añade todas las imágenes del ZIP; máximo 30 MB y sin límite de cantidad.
+                Puedes elegir un ZIP, una imagen o varias. El formato se detecta automáticamente; máximo 30 MB en total.
               </p>
             </div>
           </section>

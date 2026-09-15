@@ -2,6 +2,7 @@ import "server-only";
 import { inflateRawSync } from "node:zlib";
 
 const MAX_TOTAL_SIZE = 40 * 1024 * 1024;
+export const MAX_IMPORT_IMAGE_UPLOAD_SIZE = 30 * 1024 * 1024;
 
 export type ExtractedZipImage = { filename: string; mimeType: string; data: Buffer };
 
@@ -17,6 +18,39 @@ function imageMime(filename: string, data: Buffer) {
   )
     return "image/webp";
   return null;
+}
+
+function isZip(filename: string, data: Buffer) {
+  return /\.zip$/i.test(filename) || (data[0] === 0x50 && data[1] === 0x4b);
+}
+
+export function extractImportImages(files: Array<{ filename: string; data: Buffer }>): ExtractedZipImage[] {
+  if (!files.length || files.reduce((total, file) => total + file.data.length, 0) > MAX_IMPORT_IMAGE_UPLOAD_SIZE)
+    throw new Error("IMAGE_UPLOAD_LIMIT");
+
+  const images: ExtractedZipImage[] = [];
+  let totalSize = 0;
+  for (const [index, file] of files.entries()) {
+    if (!file.data.length) continue;
+    const extracted = isZip(file.filename, file.data)
+      ? extractImagesFromZip(file.data)
+      : [
+          {
+            filename: file.filename || `imagen-${index + 1}`,
+            mimeType: imageMime(file.filename, file.data),
+            data: file.data,
+          },
+        ];
+    for (const image of extracted) {
+      if (!image.mimeType) throw new Error("IMAGE_INVALID");
+      totalSize += image.data.length;
+      if (totalSize > MAX_TOTAL_SIZE) throw new Error("IMAGE_UPLOAD_LIMIT");
+      images.push({ ...image, filename: image.filename.slice(0, 180) });
+    }
+  }
+
+  if (!images.length) throw new Error("IMAGE_EMPTY");
+  return images;
 }
 
 export function extractImagesFromZip(zip: Buffer): ExtractedZipImage[] {

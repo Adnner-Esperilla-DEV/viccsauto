@@ -11,7 +11,7 @@ import { requireStaff } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { getImportFinanceSummary } from "@/lib/import-finances";
 import { deleteObjectsBestEffort, uploadObject } from "@/lib/object-storage";
-import { extractImagesFromZip } from "@/lib/zip-images";
+import { extractImportImages, MAX_IMPORT_IMAGE_UPLOAD_SIZE } from "@/lib/zip-images";
 
 const optionalText = (max: number) =>
   z
@@ -159,6 +159,22 @@ function importError(code: string): never {
 
 type UploadableFile = { data: Uint8Array; filename: string; mimeType: string; size?: number };
 
+async function readImportImages(formData: FormData) {
+  const files = [...formData.getAll("imageFiles"), ...formData.getAll("imageZip")].filter(
+    (entry): entry is File => entry instanceof File && entry.size > 0,
+  );
+  if (!files.length || files.reduce((total, file) => total + file.size, 0) > MAX_IMPORT_IMAGE_UPLOAD_SIZE)
+    throw new Error("IMAGE_UPLOAD_LIMIT");
+  return {
+    filenames: files.map((file) => file.name),
+    images: extractImportImages(
+      await Promise.all(
+        files.map(async (file) => ({ filename: file.name, data: Buffer.from(await file.arrayBuffer()) })),
+      ),
+    ),
+  };
+}
+
 async function uploadFiles(files: UploadableFile[], prefix: string) {
   const uploaded: Array<UploadableFile & { storageKey: string }> = [];
   try {
@@ -232,14 +248,12 @@ export async function createVehicleImportAction(formData: FormData) {
   });
   if (Math.round(finance.paidAmountUsd * 100) > Math.round(finance.totalUsd * 100)) importError("payment");
 
-  const zipFile = formData.get("imageZip");
-  if (!(zipFile instanceof File) || !zipFile.size || zipFile.size > 30 * 1024 * 1024 || !/\.zip$/i.test(zipFile.name))
-    importError("zip");
   let images;
+  let imageFilenames: string[];
   try {
-    images = extractImagesFromZip(Buffer.from(await zipFile.arrayBuffer()));
+    ({ images, filenames: imageFilenames } = await readImportImages(formData));
   } catch {
-    importError("zip");
+    importError("images");
   }
 
   const attachmentFiles = formData
@@ -376,6 +390,7 @@ export async function createVehicleImportAction(formData: FormData) {
     otherChargesUsd: vehicleImport.otherChargesUsd,
     paidAmountUsd: vehicleImport.paidAmountUsd,
     imageCount: images.length,
+    imageFilenames,
     attachmentCount: attachments.length,
     initialCustomerNote: Boolean(initialNote),
   });
@@ -515,14 +530,12 @@ export async function addVehicleImportImagesAction(formData: FormData) {
   if (!importId.success) redirect("/admin/imports");
   const exists = await db.vehicleImport.findUnique({ where: { id: importId.data }, select: { id: true } });
   if (!exists) redirect("/admin/imports");
-  const zipFile = formData.get("imageZip");
-  if (!(zipFile instanceof File) || !zipFile.size || zipFile.size > 30 * 1024 * 1024 || !/\.zip$/i.test(zipFile.name))
-    redirect(`/admin/imports/${exists.id}?error=zip`);
   let images;
+  let imageFilenames: string[];
   try {
-    images = extractImagesFromZip(Buffer.from(await zipFile.arrayBuffer()));
+    ({ images, filenames: imageFilenames } = await readImportImages(formData));
   } catch {
-    redirect(`/admin/imports/${exists.id}?error=zip`);
+    redirect(`/admin/imports/${exists.id}?error=images`);
   }
   const lastImage = await db.vehicleImportImage.aggregate({ where: { importId: exists.id }, _max: { position: true } });
   const firstPosition = (lastImage._max.position ?? -1) + 1;
@@ -541,7 +554,7 @@ export async function addVehicleImportImagesAction(formData: FormData) {
     await deleteObjectsBestEffort(uploadedImages.map((image) => image.storageKey));
     throw error;
   }
-  await audit(user.id, "ADD_IMAGES", exists.id, { count: images.length, zipFilename: zipFile.name });
+  await audit(user.id, "ADD_IMAGES", exists.id, { count: images.length, filenames: imageFilenames });
   revalidatePath(`/admin/imports/${exists.id}`);
   revalidatePath(`/imports/${exists.id}`);
   redirect(`/admin/imports/${exists.id}?ok=images`);

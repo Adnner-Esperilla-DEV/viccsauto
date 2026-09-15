@@ -26,9 +26,17 @@ function customerName(customer: CustomerOption) {
 export function CustomerCombobox({
   customers,
   initialCustomerId = "",
+  name = "customerId",
+  label = "Cliente asignado",
+  required = true,
+  className = "sm:col-span-2 lg:col-span-3",
 }: {
   customers: CustomerOption[];
   initialCustomerId?: string;
+  name?: string;
+  label?: string;
+  required?: boolean;
+  className?: string;
 }) {
   const listId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -57,14 +65,14 @@ export function CustomerCombobox({
   }
 
   return (
-    <div className="sm:col-span-2 lg:col-span-3">
+    <div className={className}>
       <div className="flex items-end justify-between gap-3">
         <label htmlFor={`${listId}-input`} className="text-sm font-bold text-slate-700">
-          Cliente asignado
+          {label}
         </label>
         <span className="text-xs text-slate-500">{customers.length} clientes disponibles</span>
       </div>
-      <input type="hidden" name="customerId" value={selectedId} />
+      <input type="hidden" name={name} value={selectedId} />
       <div
         className="relative mt-2"
         onBlur={(event) => {
@@ -79,7 +87,7 @@ export function CustomerCombobox({
           ref={inputRef}
           id={`${listId}-input`}
           type="search"
-          required
+          required={required}
           role="combobox"
           aria-autocomplete="list"
           aria-controls={listId}
@@ -91,7 +99,7 @@ export function CustomerCombobox({
           className="w-full rounded-xl border border-slate-300 bg-white py-3 pl-12 pr-4 font-normal outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-100"
           onFocus={() => setOpen(true)}
           onChange={(event) => {
-            event.currentTarget.setCustomValidity("Selecciona un cliente de la lista.");
+            event.currentTarget.setCustomValidity(required ? "Selecciona un cliente de la lista." : "");
             setQuery(event.target.value);
             setSelectedId("");
             setOpen(true);
@@ -160,8 +168,10 @@ export function CustomerCombobox({
         <p className="mt-2 flex items-center gap-1 text-sm font-semibold text-emerald-700">
           <IoCheckmarkOutline aria-hidden="true" /> Seleccionado: {customerName(selected)}
         </p>
-      ) : (
+      ) : required ? (
         <p className="mt-2 text-xs text-slate-500">Debes seleccionar una coincidencia de la lista.</p>
+      ) : (
+        <p className="mt-2 text-xs text-slate-500">Sin selección se muestran todos los clientes.</p>
       )}
     </div>
   );

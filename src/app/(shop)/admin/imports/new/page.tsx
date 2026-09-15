@@ -12,6 +12,7 @@ const errors: Record<string, string> = {
   payment: "El monto cancelado no puede superar el total de la importación.",
   customer: "Selecciona un cliente válido.",
   zip: "El ZIP debe contener imágenes JPG, PNG o WebP válidas y pesar como máximo 30 MB.",
+  images: "Selecciona un ZIP o imágenes JPG, PNG o WebP válidas (máximo 30 MB en total).",
   attachments: "Adjunta hasta 5 archivos PDF o imágenes de máximo 5 MB cada uno.",
   duplicate: "Ya existe una importación con ese VIN.",
   storage: "No se pudieron almacenar los archivos en el bucket. Revisa su configuración e inténtalo otra vez.",
@@ -100,13 +101,16 @@ export default async function NewImportPage({ searchParams }: { searchParams: Pr
         </section>
         <section className="grid gap-5 rounded-3xl bg-white p-6 shadow-sm sm:grid-cols-2">
           <div>
-            <h2 className="text-xl font-black">Imágenes en ZIP</h2>
-            <p className="mt-1 text-sm text-slate-500">JPG, PNG o WebP; ZIP máximo 30 MB.</p>
+            <h2 className="text-xl font-black">Imágenes</h2>
+            <p className="mt-1 text-sm text-slate-500">
+              Selecciona un ZIP, una imagen o varias; detectamos el formato automáticamente. Máximo 30 MB en total.
+            </p>
             <input
               required
+              multiple
               type="file"
-              name="imageZip"
-              accept=".zip,application/zip"
+              name="imageFiles"
+              accept=".zip,application/zip,image/jpeg,image/png,image/webp"
               className={`${field} file:mr-4 file:rounded-lg file:border-0 file:bg-blue-50 file:px-3 file:py-2 file:font-bold file:text-blue-700`}
             />
           </div>

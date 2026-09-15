@@ -98,3 +98,16 @@ test("otros cargos son opcionales y se suman al total de cualquier importación"
   assert.equal(vehicle.totalUsd, 1_325.5);
   assert.equal(parts.totalUsd, 435);
 });
+
+test("los importes no numéricos no contaminan el total ni el saldo con NaN", () => {
+  const summary = getImportFinanceSummary({
+    importType: "VEHICLE",
+    towingCostUsd: Number.NaN,
+    oceanFreightUsd: Number.NaN,
+    otherChargesUsd: Number.NaN,
+    paidAmountUsd: Number.NaN,
+  });
+  assert.equal(summary.totalUsd, 0);
+  assert.equal(summary.balanceUsd, 0);
+  assert.equal(summary.paymentStatus, "UNPRICED");
+});
