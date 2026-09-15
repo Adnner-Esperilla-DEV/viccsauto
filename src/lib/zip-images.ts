@@ -42,10 +42,11 @@ export function extractImportImages(files: Array<{ filename: string; data: Buffe
           },
         ];
     for (const image of extracted) {
-      if (!image.mimeType) throw new Error("IMAGE_INVALID");
+      const mimeType = image.mimeType;
+      if (!mimeType) throw new Error("IMAGE_INVALID");
       totalSize += image.data.length;
       if (totalSize > MAX_TOTAL_SIZE) throw new Error("IMAGE_UPLOAD_LIMIT");
-      images.push({ ...image, filename: image.filename.slice(0, 180) });
+      images.push({ filename: image.filename.slice(0, 180), mimeType, data: image.data });
     }
   }
 
